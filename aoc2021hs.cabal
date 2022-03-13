@@ -61,3 +61,10 @@ executable day02
         base ^>=4.14.3.0,
         aoc2021hs
     hs-source-dirs:   app
+
+executable day03
+    main-is:          Day03.hs
+    build-depends:
+        base ^>=4.14.3.0,
+        aoc2021hs
+    hs-source-dirs:   app
