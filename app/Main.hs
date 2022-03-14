@@ -27,7 +27,7 @@ main = do
       let dayNum = read dayStr
           day = days !! (dayNum -1)
           padDay dayNum = printf "%02d" dayNum
-          filename dayNum typ = "app/Day" ++ padDay dayNum ++ typ ++ ".txt"
+          filename dayNum typ = "data/Day" ++ padDay dayNum ++ typ ++ ".txt"
 
       testData <- loadData $ filename dayNum "Test"
       problemData <- loadData $ filename dayNum "Problem"
