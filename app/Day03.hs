@@ -1,32 +1,9 @@
-module Main where
+module Day03 where
 
 import Data.List (transpose)
+import DayProblem
 
-loadData :: String -> IO [String]
-loadData filename = do
-  filedata <- readFile filename
-  return (lines filedata)
-
-green :: String -> String
-green str = "\27[32m" ++ str ++ "\27[0m"
-
-red :: String -> String
-red str = "\27[31m" ++ str ++ "\27[0m"
-
-main :: IO ()
-main = do
-  testData <- loadData "app/Day03Test.txt"
-  problemData <- loadData "app/Day03Problem.txt"
-
-  let testResult = solveA testData
-   in if testResult == 198
-        then putStrLn $ green $ "Test A SUCCEEDED. Problem result = " ++ show (solveA problemData)
-        else putStrLn $ red $ "Test A FAILED. Result: " ++ show testResult
-
-  let testResult = solveB testData
-   in if testResult == 230
-        then putStrLn $ green $ "Test B SUCCEEDED. Problem result = " ++ show (solveB problemData)
-        else putStrLn $ red $ "Test B FAILED. Result: " ++ show testResult
+problems = (P solveA 198, P solveB 230)
 
 split2PlusMinus :: [Char] -> [Int]
 split2PlusMinus = map (\c -> if c == '1' then 1 else -1)

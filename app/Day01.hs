@@ -1,28 +1,8 @@
-module Main where
+module Day01 where
 
-import Data.List (tails)
-import Data.String (IsString)
-import qualified MyLib (someFunc)
+import DayProblem
 
-loadData :: String -> IO [String]
-loadData filename = do
-  filedata <- readFile filename
-  return (lines filedata)
-
-main :: IO ()
-main = do
-  testData <- loadData "app/Day01Test.txt"
-  problemData <- loadData "app/Day01Problem.txt"
-
-  let testResult = solveA2 testData
-   in if testResult == 7
-        then putStrLn $ "Test A SUCCEEDED. Problem result = " ++ show (solveA2 problemData)
-        else putStrLn $ "Test A FAILED. Result: " ++ show testResult
-
-  let testResult = solveB testData
-   in if testResult == 5
-        then putStrLn $ "Test B SUCCEEDED. Problem result = " ++ show (solveB problemData)
-        else putStrLn $ "Test B FAILED. Result: " ++ show testResult
+problems = (P solveA 7, P solveB 5)
 
 solveA :: [String] -> Int
 solveA lines = countInc 0 (map read lines)

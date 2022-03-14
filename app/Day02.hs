@@ -1,24 +1,8 @@
-module Main where
+module Day02 where
 
-loadData :: String -> IO [String]
-loadData filename = do
-  filedata <- readFile filename
-  return (lines filedata)
+import DayProblem
 
-main :: IO ()
-main = do
-  testData <- loadData "app/Day02Test.txt"
-  problemData <- loadData "app/Day02Problem.txt"
-
-  let testResult = solveA testData
-   in if testResult == 150
-        then putStrLn $ "Test A SUCCEEDED. Problem result = " ++ show (solveA problemData)
-        else putStrLn $ "Test A FAILED. Result: " ++ show testResult
-
-  let testResult = solveB testData
-   in if testResult == 900
-        then putStrLn $ "Test B SUCCEEDED. Problem result = " ++ show (solveB problemData)
-        else putStrLn $ "Test B FAILED. Result: " ++ show testResult
+problems = (P solveA 150, P solveB 900)
 
 solveA :: [String] -> Int
 solveA lines =
