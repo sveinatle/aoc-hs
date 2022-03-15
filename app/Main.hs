@@ -5,6 +5,7 @@ import Day02
 import Day03
 import Day04
 import Day05
+import Day06
 import DayProblem
 import System.Environment (getArgs)
 import Text.Printf (printf)
@@ -22,7 +23,7 @@ red str = "\27[31m" ++ str ++ "\27[0m"
 
 main :: IO ()
 main = do
-  let days = [Day01.problems, Day02.problems, Day03.problems, Day04.problems, Day05.problems]
+  let days = [Day01.problems, Day02.problems, Day03.problems, Day04.problems, Day05.problems, Day06.problems]
   args <- getArgs
   case args of
     [dayStr] -> do
