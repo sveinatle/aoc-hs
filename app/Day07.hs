@@ -58,4 +58,13 @@ solveA' lines =
    in calculateScore (median crabs) crabs
 
 solveB :: [String] -> Int
-solveB lines = 99
+solveB lines =
+  let crabs = sort $ map read (splitOn "," $ head lines) :: [Int]
+      positions = map head $ group crabs
+      scores = map (calculateScoreB crabs) [(minimum crabs) .. (maximum crabs)]
+   in minimum scores
+
+calculateScoreB crabs position =
+  let distance = abs . subtract position
+      fuel d = d * (d + 1) `div` 2
+   in sum $ map (fuel . distance) crabs
