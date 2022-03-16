@@ -5,7 +5,7 @@ import Data.List.Split (splitOn)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 37, P solveB 168)
+problems = (P solveA' 37, P solveB 168)
 
 data State = S
   { sPosition :: Int,
@@ -49,7 +49,13 @@ getNextState previousState currentCrabs =
           sTotalDistance = score
         }
 
-calculateScore position crabs = sum crabs - (length crabs * position)
+calculateScore position crabs = sum $ map (abs . subtract position) crabs
+
+solveA' :: [String] -> Int
+solveA' lines =
+  let crabs = sort $ map read (splitOn "," $ head lines) :: [Int]
+      median crabs = crabs !! (length crabs `div` 2)
+   in calculateScore (median crabs) crabs
 
 solveB :: [String] -> Int
 solveB lines = 99
