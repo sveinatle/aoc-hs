@@ -8,7 +8,7 @@ import Data.Maybe (fromJust, isJust, isNothing, mapMaybe)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 1656, P solveB 288957)
+problems = (P solveA 1656, P solveB 195)
 
 type Octs = [Int]
 
@@ -76,6 +76,15 @@ updateOct (x, y) f octs =
 splitList i l = (take i l, l !! i, drop (i + 1) l)
 
 solveB :: [String] -> Int
-solveB lines = 5
+solveB lines =
+  let state = SS 0 $ concatMap (map digitToInt) lines
+      (count, _) = until (allFlashed . snd) countingIterator (0, state)
+   in count
+
+allFlashed :: SolutionState -> Bool
+allFlashed (SS _ octs) = all (== 0) octs
+
+countingIterator :: (Int, SolutionState) -> (Int, SolutionState)
+countingIterator (count, ss) = (count + 1, iterator ss)
 
 trace' msg value = trace (msg ++ " " ++ show value) value
