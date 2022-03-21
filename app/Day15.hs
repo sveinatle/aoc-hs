@@ -7,6 +7,8 @@ import Data.List.Split (splitOn)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes, fromJust, isJust, mapMaybe)
+import Data.PQueue.Min (MinQueue)
+import qualified Data.PQueue.Min as MinQueue
 import DayProblem
 import Debug.Trace (trace)
 
@@ -31,7 +33,7 @@ solve lines =
       endCell = (w -1, h -1)
       cellCostGrid = concat lines
       isEndCellScoreFinished grid = isFinished $ snd $ gridGetCell grid w endCell
-      emptyState = State (zip [0 ..] $ replicate (w * h) Never) [] 0
+      emptyState = State (zip [0 ..] $ replicate (w * h) Never) MinQueue.empty 0
       initialState = stateSetCell w (0, 0) (Pending 0) emptyState
       State finalState _ _ = until (isEndCellScoreFinished . stateGrid) (finishNextCell cellCostGrid w) initialState
    in case snd $ gridGetCell finalState w endCell of
@@ -60,20 +62,16 @@ isFinished _ = False
 
 type PathCostGrid = [(CellIdx, Cell)]
 
-type PendingCells = [(CellIdx, Cost)]
+type PendingCell = (Cost, CellIdx)
+
+type PendingCells = MinQueue PendingCell
 
 data State = State {stateGrid :: PathCostGrid, statePendingCells :: PendingCells, stateFinishedCount :: Int}
 
 idxToXY w idx = (idx `mod` w, idx `div` w)
 
-pendingCellsAddCell :: Width -> (CellIdx, Cost) -> PendingCells -> PendingCells
-pendingCellsAddCell w (cellIdx, cost) pendingCells =
-  let sortedInsertIdx = findIndex (\(i, arrayCost) -> arrayCost >= cost) pendingCells
-   in case sortedInsertIdx of
-        -- Append to end if no pending cells have higher cost than this cell.
-        Nothing -> pendingCells ++ [(cellIdx, cost)]
-        -- Otherwise insert into sorted idx.
-        Just arrayIdx -> take arrayIdx pendingCells ++ [(cellIdx, cost)] ++ drop arrayIdx pendingCells
+pendingCellsAddCell :: PendingCell -> PendingCells -> PendingCells
+pendingCellsAddCell = MinQueue.insert
 
 gridGetCell :: [a] -> Width -> CellCoord -> a
 gridGetCell grid w (x, y) = grid !! (y * w + x)
@@ -82,7 +80,7 @@ stateSetCell :: Width -> CellCoord -> Cell -> State -> State
 stateSetCell w (x, y) newCellValue (State grid pendingCells finCount) =
   let cellIdx = y * w + x
       newPendingCells = case newCellValue of
-        Pending cost -> pendingCellsAddCell w (cellIdx, cost) pendingCells
+        Pending cost -> pendingCellsAddCell (cost, cellIdx) pendingCells
         _ -> pendingCells
       newGrid = take cellIdx grid ++ [(cellIdx, newCellValue)] ++ drop (cellIdx + 1) grid
    in State newGrid newPendingCells finCount
@@ -105,12 +103,12 @@ updateCell cellCostGrid w pathCost (x, y) (State grid pendingCells finCount)
 
 finishNextCell :: CellCostGrid -> Width -> State -> State
 finishNextCell cellCostGrid w (State grid pendingCells finCount) =
-  let (pendingIdx, pathCost) = head pendingCells
-      (x, y) = log $idxToXY w pendingIdx
+  let ((pathCost, pendingIdx), newPendingCells) = MinQueue.deleteFindMin pendingCells
+      (x, y) = log $ idxToXY w pendingIdx
       log v = if finCount `mod` 100 == 0 then trace (show finCount ++ show pendingCells) v else v
    in updateCell cellCostGrid w pathCost (x + 1, y) $
         updateCell cellCostGrid w pathCost (x - 1, y) $
           updateCell cellCostGrid w pathCost (x, y + 1) $
             updateCell cellCostGrid w pathCost (x, y - 1) $
               stateSetCell w (x, y) (Finished pathCost) $
-                State grid (tail pendingCells) (finCount + 1)
+                State grid newPendingCells (finCount + 1)
