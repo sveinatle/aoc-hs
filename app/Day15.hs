@@ -9,6 +9,8 @@ import qualified Data.Map as Map
 import Data.Maybe (catMaybes, fromJust, isJust, mapMaybe)
 import Data.PQueue.Min (MinQueue)
 import qualified Data.PQueue.Min as MinQueue
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector
 import DayProblem
 import Debug.Trace (trace)
 
@@ -31,9 +33,10 @@ solve lines =
   let w = length (head lines)
       h = length lines
       endCell = (w -1, h -1)
-      cellCostGrid = concat lines
+      cellCostGrid = Vector.fromList $ concat lines
       isEndCellScoreFinished grid = isFinished $ snd $ gridGetCell grid w endCell
-      emptyState = State (zip [0 ..] $ replicate (w * h) Never) MinQueue.empty 0
+      initialPathCostGrid = Vector.fromList (zip [0 ..] $ replicate (w * h) Never)
+      emptyState = State initialPathCostGrid MinQueue.empty 0
       initialState = stateSetCell w (0, 0) (Pending 0) emptyState
       State finalState _ _ = until (isEndCellScoreFinished . stateGrid) (finishNextCell cellCostGrid w) initialState
    in case snd $ gridGetCell finalState w endCell of
@@ -42,7 +45,7 @@ solve lines =
 
 type Cost = Int
 
-type CellCostGrid = [Cost]
+type CellCostGrid = Vector Cost
 
 type Width = Int
 
@@ -60,7 +63,7 @@ isFinished :: Cell -> Bool
 isFinished (Finished _) = True
 isFinished _ = False
 
-type PathCostGrid = [(CellIdx, Cell)]
+type PathCostGrid = Vector (CellIdx, Cell)
 
 type PendingCell = (Cost, CellIdx)
 
@@ -73,8 +76,8 @@ idxToXY w idx = (idx `mod` w, idx `div` w)
 pendingCellsAddCell :: PendingCell -> PendingCells -> PendingCells
 pendingCellsAddCell = MinQueue.insert
 
-gridGetCell :: [a] -> Width -> CellCoord -> a
-gridGetCell grid w (x, y) = grid !! (y * w + x)
+gridGetCell :: Vector a -> Width -> CellCoord -> a
+gridGetCell grid w (x, y) = grid Vector.! (y * w + x)
 
 stateSetCell :: Width -> CellCoord -> Cell -> State -> State
 stateSetCell w (x, y) newCellValue (State grid pendingCells finCount) =
@@ -82,7 +85,7 @@ stateSetCell w (x, y) newCellValue (State grid pendingCells finCount) =
       newPendingCells = case newCellValue of
         Pending cost -> pendingCellsAddCell (cost, cellIdx) pendingCells
         _ -> pendingCells
-      newGrid = take cellIdx grid ++ [(cellIdx, newCellValue)] ++ drop (cellIdx + 1) grid
+      newGrid = Vector.concat [Vector.take cellIdx grid, Vector.fromList [(cellIdx, newCellValue)], Vector.drop (cellIdx + 1) grid]
    in State newGrid newPendingCells finCount
 
 updateCell :: CellCostGrid -> Width -> Cost -> CellCoord -> State -> State
