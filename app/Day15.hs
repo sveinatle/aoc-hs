@@ -2,7 +2,7 @@ module Day15 where
 
 import Data.Char (digitToInt)
 import Data.Foldable (minimumBy)
-import Data.List (delete, find, permutations, sort, sortBy, transpose, (\\))
+import Data.List (delete, find, findIndex, permutations, sort, sortBy, transpose, (\\))
 import Data.List.Split (splitOn)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -30,14 +30,25 @@ solve lines =
       h = length lines
       endCell = (w -1, h -1)
       cellCostGrid = concat lines
+      isEndCellScoreFinished grid = isFinished $ snd $ gridGetCell grid w endCell
       emptyState = State (zip [0 ..] $ replicate (w * h) Never) [] 0
-      initialState = setCell w (0, 0) (Pending 0) emptyState
-      State finalState _ _ = until (\(State grid _ _) -> isFinished $ snd $ getCell grid w endCell) (finishNextCell cellCostGrid w) initialState
-   in case snd $ getCell finalState w endCell of
+      initialState = stateSetCell w (0, 0) (Pending 0) emptyState
+      State finalState _ _ = until (isEndCellScoreFinished . stateGrid) (finishNextCell cellCostGrid w) initialState
+   in case snd $ gridGetCell finalState w endCell of
         Finished cost -> cost
         _ -> error "Cell not computed."
 
-data Cell = Never | Pending Int | Finished Int
+type Cost = Int
+
+type CellCostGrid = [Cost]
+
+type Width = Int
+
+type CellIdx = Int
+
+type CellCoord = (Int, Int)
+
+data Cell = Never | Pending Cost | Finished Cost deriving (Show)
 
 isPending :: Cell -> Bool
 isPending (Pending _) = True
@@ -47,55 +58,59 @@ isFinished :: Cell -> Bool
 isFinished (Finished _) = True
 isFinished _ = False
 
-takePending :: Cell -> Int
-takePending (Pending v) = v
-takePending _ = error "Expected Pending value."
+type PathCostGrid = [(CellIdx, Cell)]
 
-type Grid = [(Int, Cell)]
+type PendingCells = [(CellIdx, Cost)]
 
-type PendingCells = [(Int, Int)]
-
-data State = State Grid PendingCells Int
+data State = State {stateGrid :: PathCostGrid, statePendingCells :: PendingCells, stateFinishedCount :: Int}
 
 idxToXY w idx = (idx `mod` w, idx `div` w)
 
-getCell :: [a] -> Int -> (Int, Int) -> a
-getCell grid w (x, y) = grid !! (y * w + x)
+pendingCellsAddCell :: Width -> (CellIdx, Cost) -> PendingCells -> PendingCells
+pendingCellsAddCell w (cellIdx, cost) pendingCells =
+  let sortedInsertIdx = findIndex (\(i, arrayCost) -> arrayCost >= cost) pendingCells
+   in case sortedInsertIdx of
+        -- Append to end if no pending cells have higher cost than this cell.
+        Nothing -> pendingCells ++ [(cellIdx, cost)]
+        -- Otherwise insert into sorted idx.
+        Just arrayIdx -> take arrayIdx pendingCells ++ [(cellIdx, cost)] ++ drop arrayIdx pendingCells
 
-setCell :: Int -> (Int, Int) -> Cell -> State -> State
-setCell w (x, y) c state = case state of
-  State grid pendingCells finCount ->
-    let i = y * w + x
-        newPendingCells = case c of
-          Pending cost -> (i, cost) : pendingCells
-          Finished _ -> filter ((/= i) . fst) pendingCells
-          _ -> pendingCells
-        newGrid = take i grid ++ [(i, c)] ++ drop (i + 1) grid
-     in State newGrid newPendingCells finCount
+gridGetCell :: [a] -> Width -> CellCoord -> a
+gridGetCell grid w (x, y) = grid !! (y * w + x)
 
-updateCell :: [Int] -> Int -> Int -> (Int, Int) -> State -> State
+stateSetCell :: Width -> CellCoord -> Cell -> State -> State
+stateSetCell w (x, y) newCellValue (State grid pendingCells finCount) =
+  let cellIdx = y * w + x
+      newPendingCells = case newCellValue of
+        Pending cost -> pendingCellsAddCell w (cellIdx, cost) pendingCells
+        _ -> pendingCells
+      newGrid = take cellIdx grid ++ [(cellIdx, newCellValue)] ++ drop (cellIdx + 1) grid
+   in State newGrid newPendingCells finCount
+
+updateCell :: CellCostGrid -> Width -> Cost -> CellCoord -> State -> State
 updateCell cellCostGrid w pathCost (x, y) (State grid pendingCells finCount)
   | x < 0 || y < 0 || x >= w || y >= length grid `div` w = state
   | otherwise =
     let c = (x, y)
-        newPathCost = pathCost + getCell cellCostGrid w c
-     in case snd $ getCell grid w c of
-          Never -> setCell w c (Pending newPathCost) state
+        newPathCost = pathCost + gridGetCell cellCostGrid w c
+     in case snd $ gridGetCell grid w c of
+          Never -> stateSetCell w c (Pending newPathCost) state
           Pending oldPathCost ->
             if newPathCost < oldPathCost
-              then setCell w c (Pending newPathCost) state
+              then stateSetCell w c (Pending newPathCost) state
               else state
           Finished _ -> state
   where
     state = State grid pendingCells finCount
 
-finishNextCell :: [Int] -> Int -> State -> State
+finishNextCell :: CellCostGrid -> Width -> State -> State
 finishNextCell cellCostGrid w (State grid pendingCells finCount) =
-  let (idx, cost) = minimumBy (\x y -> compare (snd x) (snd y)) pendingCells
-      (x, y) = log $idxToXY w idx
-      log v = if finCount `mod` 100 == 0 then trace (show finCount) v else v
-   in updateCell cellCostGrid w cost (x + 1, y) $
-        updateCell cellCostGrid w cost (x -1, y) $
-          updateCell cellCostGrid w cost (x, y + 1) $
-            updateCell cellCostGrid w cost (x, y -1) $
-              setCell w (x, y) (Finished cost) (State grid pendingCells (finCount + 1))
+  let (pendingIdx, pathCost) = head pendingCells
+      (x, y) = log $idxToXY w pendingIdx
+      log v = if finCount `mod` 100 == 0 then trace (show finCount ++ show pendingCells) v else v
+   in updateCell cellCostGrid w pathCost (x + 1, y) $
+        updateCell cellCostGrid w pathCost (x - 1, y) $
+          updateCell cellCostGrid w pathCost (x, y + 1) $
+            updateCell cellCostGrid w pathCost (x, y - 1) $
+              stateSetCell w (x, y) (Finished pathCost) $
+                State grid (tail pendingCells) (finCount + 1)
