@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad (zipWithM_)
 import Control.Monad.Loops (takeWhileM)
 import Day01
 import Day02
@@ -55,13 +56,21 @@ main = do
     [dayStr] -> do
       let dayNum = read dayStr
           cases = days !! (dayNum -1)
-      takeWhileM (solveCase dayNum) cases
+      runDayCases dayNum cases
       return ()
-    _ -> putStrLn "Specify day number."
+    _ -> do
+      let dayCount = length days
+      putStrLn $ "No day specified. Running all " ++ show dayCount ++ " days..."
+      zipWithM_ runDayCases [1 ..] days
 
 getFilename dayNum caseName = "data/Day" ++ padDay dayNum ++ caseName ++ ".txt"
   where
     padDay dayNum = printf "%02d" dayNum
+
+runDayCases :: Int -> [Case] -> IO ()
+runDayCases dayNum cases = do
+  takeWhileM (solveCase dayNum) cases
+  return ()
 
 solveCase dayNum (Case solver caseName expectedResult) = do
   caseData <- loadData $ getFilename dayNum caseName
