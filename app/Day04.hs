@@ -6,7 +6,7 @@ import Data.Maybe (isNothing)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 4512, P solveB 1924)
+cases = [Case solveA "Test" 4512, Case solveA "Problem" 0, Case solveB "Test" 1924, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines =

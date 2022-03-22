@@ -8,7 +8,7 @@ import Data.Maybe (fromJust, isJust, isNothing, mapMaybe)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 226, P solveB 3509)
+cases = [Case solveA "Test" 226, Case solveA "Problem" 0, Case solveB "Test" 3509, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines =

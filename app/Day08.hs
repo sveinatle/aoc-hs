@@ -5,7 +5,7 @@ import Data.List.Split (splitOn)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 26, P solveB 61229)
+cases = [Case solveA "Test" 26, Case solveA "Problem" 0, Case solveB "Test" 61229, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines =

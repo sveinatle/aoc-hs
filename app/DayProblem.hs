@@ -1,3 +1,3 @@
 module DayProblem where
 
-data Problem = P ([String] -> Int) Int
+data Case = Case {solver :: [String] -> Int, caseName :: String, expectedResult :: Int}

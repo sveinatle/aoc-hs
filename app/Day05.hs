@@ -5,7 +5,7 @@ import Data.List.Split (splitOn)
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 5, P solveB 12)
+cases = [Case solveA "Test" 5, Case solveA "Problem" 0, Case solveB "Test" 12, Case solveB "Problem" 0]
 
 type Coord = (Int, Int)
 

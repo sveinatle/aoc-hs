@@ -14,7 +14,7 @@ import qualified Data.Vector as Vector
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 40, P solveB 315)
+cases = [Case solveA "Test" 40, Case solveA "Problem" 0, Case solveB "Test" 315, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines = solve $ map (map digitToInt) lines

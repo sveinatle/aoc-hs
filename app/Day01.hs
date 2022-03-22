@@ -2,7 +2,7 @@ module Day01 where
 
 import DayProblem
 
-problems = (P solveA 7, P solveB 5)
+cases = [Case solveA "Test" 7, Case solveA "Problem" 0, Case solveB "Test" 5, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines = countInc 0 (map read lines)

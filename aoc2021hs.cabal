@@ -48,7 +48,8 @@ executable aoc2021hs
         split ^>=0.2.3,
         containers,
         pqueue,
-        vector
+        vector,
+        monad-loops
 
     hs-source-dirs:   app
     default-language: Haskell2010

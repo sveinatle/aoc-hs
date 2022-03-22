@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad.Loops (takeWhileM)
 import Day01
 import Day02
 import Day03
@@ -33,39 +34,46 @@ red str = "\27[31m" ++ str ++ "\27[0m"
 main :: IO ()
 main = do
   let days =
-        [ Day01.problems,
-          Day02.problems,
-          Day03.problems,
-          Day04.problems,
-          Day05.problems,
-          Day06.problems,
-          Day07.problems,
-          Day08.problems,
-          Day09.problems,
-          Day10.problems,
-          Day11.problems,
-          Day12.problems,
-          Day13.problems,
-          Day14.problems,
-          Day15.problems
+        [ Day01.cases,
+          Day02.cases,
+          Day03.cases,
+          Day04.cases,
+          Day05.cases,
+          Day06.cases,
+          Day07.cases,
+          Day08.cases,
+          Day09.cases,
+          Day10.cases,
+          Day11.cases,
+          Day12.cases,
+          Day13.cases,
+          Day14.cases,
+          Day15.cases
         ]
   args <- getArgs
   case args of
     [dayStr] -> do
       let dayNum = read dayStr
-          day = days !! (dayNum -1)
-          padDay dayNum = printf "%02d" dayNum
-          filename dayNum typ = "data/Day" ++ padDay dayNum ++ typ ++ ".txt"
-
-      testData <- loadData $ filename dayNum "Test"
-      problemData <- loadData $ filename dayNum "Problem"
-
-      solveProblem (fst day) testData problemData
-      solveProblem (snd day) testData problemData
+          cases = days !! (dayNum -1)
+      takeWhileM (solveCase dayNum) cases
+      return ()
     _ -> putStrLn "Specify day number."
 
-solveProblem (P solver expectedTestResult) testData problemData =
-  let testResult = solver testData
-   in if testResult == expectedTestResult
-        then putStrLn $ green $ "Test SUCCEEDED. Problem result = " ++ show (solver problemData)
-        else putStrLn $ red $ "Test FAILED. Result: " ++ show testResult
+getFilename dayNum caseName = "data/Day" ++ padDay dayNum ++ caseName ++ ".txt"
+  where
+    padDay dayNum = printf "%02d" dayNum
+
+solveCase dayNum (Case solver caseName expectedResult) = do
+  caseData <- loadData $ getFilename dayNum caseName
+  let caseResult = solver caseData
+      testPassed
+        | expectedResult == 0 = do
+          putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
+          return True
+        | caseResult == expectedResult = do
+          putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ show caseResult
+          return True
+        | otherwise = do
+          putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ show caseResult
+          return False
+  testPassed

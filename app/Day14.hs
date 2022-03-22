@@ -7,7 +7,7 @@ import qualified Data.Map as Map
 import DayProblem
 import Debug.Trace (trace)
 
-problems = (P solveA 1588, P solveB 2188189693529)
+cases = [Case solveA "Test" 1588, Case solveA "Problem" 0, Case solveB "Test" 2188189693529, Case solveB "Problem" 0]
 
 solveA :: [String] -> Int
 solveA lines = solve lines 10
