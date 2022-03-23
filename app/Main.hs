@@ -17,6 +17,7 @@ import Day12
 import Day13
 import Day14
 import Day15
+import Day16
 import DayProblem
 import System.Environment (getArgs)
 import Text.Printf (printf)
@@ -49,7 +50,8 @@ main = do
           Day12.cases,
           Day13.cases,
           Day14.cases,
-          Day15.cases
+          Day15.cases,
+          Day16.cases
         ]
   args <- getArgs
   case args of
