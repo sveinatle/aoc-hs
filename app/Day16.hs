@@ -22,7 +22,14 @@ cases =
     Case solveA "Test3" 23,
     Case solveA "Test4" 31,
     Case solveA "Problem" 0,
-    Case solveB "Test" 999,
+    Case solveB "TestB1" 3,
+    Case solveB "TestB2" 54,
+    Case solveB "TestB3" 7,
+    Case solveB "TestB4" 9,
+    Case solveB "TestB5" 1,
+    Case solveB "TestB6" 0,
+    Case solveB "TestB7" 0,
+    Case solveB "TestB8" 1,
     Case solveB "Problem" 0
   ]
 
@@ -34,7 +41,7 @@ solveA lines =
 solveB :: [String] -> Int
 solveB lines =
   let packet = readPacketHex $head lines
-   in 9
+   in evaluatePacket packet
 
 trace' :: Show a => a -> a
 trace' value = trace (show value) value
@@ -60,6 +67,21 @@ readVersionsSum :: Packet -> Int
 readVersionsSum (Packet version typ (Literal _)) = version
 readVersionsSum (Packet version typ (FixedSizeOperator subPackets)) = version + sum (map readVersionsSum subPackets)
 readVersionsSum (Packet version typ (ItemCountOperator subPackets)) = version + sum (map readVersionsSum subPackets)
+
+evaluatePacket :: Packet -> Int
+evaluatePacket (Packet version typ (Literal v)) = v
+evaluatePacket (Packet version typ (FixedSizeOperator subPackets)) = evaluateOperatorPacket typ (map evaluatePacket subPackets)
+evaluatePacket (Packet version typ (ItemCountOperator subPackets)) = evaluateOperatorPacket typ (map evaluatePacket subPackets)
+
+evaluateOperatorPacket :: Int -> [Int] -> Int
+evaluateOperatorPacket 0 subPacketValues = sum subPacketValues
+evaluateOperatorPacket 1 subPacketValues = product subPacketValues
+evaluateOperatorPacket 2 subPacketValues = minimum subPacketValues
+evaluateOperatorPacket 3 subPacketValues = maximum subPacketValues
+evaluateOperatorPacket 5 [p1, p2] = if p1 > p2 then 1 else 0
+evaluateOperatorPacket 6 [p1, p2] = if p1 < p2 then 1 else 0
+evaluateOperatorPacket 7 [p1, p2] = if p1 == p2 then 1 else 0
+evaluateOperatorPacket _ _ = error "Unexpected operator packet content."
 
 readPacketHex :: String -> Packet
 readPacketHex line =
@@ -117,11 +139,11 @@ readFixedSizeOperator :: [Int] -> (PacketContent, Bits)
 readFixedSizeOperator bits =
   let (bitLength, bits') = readSlice 15 bitsToInt bits
       (subBits, restBits) = readSlice bitLength id bits'
-      packets = fst $ until (null . snd) readAndMergePacketOutput ([], subBits)
-   in (FixedSizeOperator packets, restBits)
+      packetsBackwards = fst $ until (null . snd) readAndMergePacketOutput ([], subBits)
+   in (FixedSizeOperator (reverse packetsBackwards), restBits)
 
 readItemCountOperator :: [Int] -> (PacketContent, Bits)
 readItemCountOperator bits =
   let (itemCount, bits') = readSlice 11 bitsToInt bits
-      (packets, restBits) = iterate readAndMergePacketOutput ([], bits') !! itemCount
-   in (ItemCountOperator packets, restBits)
+      (packetsBackwards, restBits) = iterate readAndMergePacketOutput ([], bits') !! itemCount
+   in (ItemCountOperator (reverse packetsBackwards), restBits)
