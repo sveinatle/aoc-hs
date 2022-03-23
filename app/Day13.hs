@@ -6,7 +6,7 @@ import Data.Tuple (swap)
 import DayProblem
 import Debug.Trace (trace)
 
-cases = [Case solveA "Test" 17, Case solveA "Problem" 0, Case solveB "Test" 0, Case solveB "Test" 0]
+cases = [Case solveA "Test" 17, Problem solveA "Problem", Case solveB "Test" 0, Problem solveB "Problem"]
 
 data Fold = X Int | Y Int
 

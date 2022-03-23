@@ -78,9 +78,6 @@ solveCase dayNum (Case solver caseName expectedResult) = do
   caseData <- loadData $ getFilename dayNum caseName
   let caseResult = solver caseData
       testPassed
-        | expectedResult == 0 = do
-          putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
-          return True
         | caseResult == expectedResult = do
           putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ show caseResult
           return True
@@ -88,3 +85,8 @@ solveCase dayNum (Case solver caseName expectedResult) = do
           putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ show caseResult
           return False
   testPassed
+solveCase dayNum (Problem solver caseName) = do
+  caseData <- loadData $ getFilename dayNum caseName
+  let caseResult = solver caseData
+   in putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
+  return True

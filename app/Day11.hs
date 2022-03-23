@@ -8,7 +8,7 @@ import Data.Maybe (fromJust, isJust, isNothing, mapMaybe)
 import DayProblem
 import Debug.Trace (trace)
 
-cases = [Case solveA "Test" 1656, Case solveA "Problem" 0, Case solveB "Test" 195, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 1656, Problem solveA "Problem", Case solveB "Test" 195, Problem solveB "Problem"]
 
 type Octs = [Int]
 

@@ -6,7 +6,7 @@ import Data.Maybe (fromJust, isJust, isNothing, mapMaybe)
 import DayProblem
 import Debug.Trace (trace)
 
-cases = [Case solveA "Test" 26397, Case solveA "Problem" 0, Case solveB "Test" 288957, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 26397, Problem solveA "Problem", Case solveB "Test" 288957, Problem solveB "Problem"]
 
 solveA :: [String] -> Int
 solveA lines = sum $ map (fromLeft 0 . checkLine) lines

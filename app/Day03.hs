@@ -3,7 +3,7 @@ module Day03 where
 import Data.List (transpose)
 import DayProblem
 
-cases = [Case solveA "Test" 198, Case solveA "Problem" 0, Case solveB "Test" 230, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 198, Problem solveA "Problem", Case solveB "Test" 230, Problem solveB "Problem"]
 
 split2PlusMinus :: [Char] -> [Int]
 split2PlusMinus = map (\c -> if c == '1' then 1 else -1)

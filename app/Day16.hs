@@ -21,7 +21,7 @@ cases =
     Case solveA "Test2" 12,
     Case solveA "Test3" 23,
     Case solveA "Test4" 31,
-    Case solveA "Problem" 0,
+    Problem solveA "Problem",
     Case solveB "TestB1" 3,
     Case solveB "TestB2" 54,
     Case solveB "TestB3" 7,
@@ -30,7 +30,7 @@ cases =
     Case solveB "TestB6" 0,
     Case solveB "TestB7" 0,
     Case solveB "TestB8" 1,
-    Case solveB "Problem" 0
+    Problem solveB "Problem"
   ]
 
 solveA :: [String] -> Int

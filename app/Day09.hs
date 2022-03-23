@@ -6,7 +6,7 @@ import Data.List.Split (chunksOf)
 import DayProblem
 import Debug.Trace (trace)
 
-cases = [Case solveA "Test" 15, Case solveA "Problem" 0, Case solveB "Test" 1134, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 15, Problem solveA "Problem", Case solveB "Test" 1134, Problem solveB "Problem"]
 
 solveA :: [String] -> Int
 solveA lines =

@@ -5,7 +5,7 @@ import Data.List.Split (splitOn)
 import DayProblem
 import Debug.Trace (trace)
 
-cases = [Case solveA "Test" 37, Case solveA "Problem" 0, Case solveB "Test" 168, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 37, Problem solveA "Problem", Case solveB "Test" 168, Problem solveB "Problem"]
 
 data State = S
   { sPosition :: Int,

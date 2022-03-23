@@ -2,7 +2,7 @@ module Day02 where
 
 import DayProblem
 
-cases = [Case solveA "Test" 150, Case solveA "Problem" 0, Case solveB "Test" 900, Case solveB "Problem" 0]
+cases = [Case solveA "Test" 150, Problem solveA "Problem", Case solveB "Test" 900, Problem solveB "Problem"]
 
 solveA :: [String] -> Int
 solveA lines =
