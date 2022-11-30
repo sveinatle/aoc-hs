@@ -2,27 +2,10 @@ module Main where
 
 import Control.Monad (zipWithM_)
 import Control.Monad.Loops (takeWhileM)
-import Day01
-import Day02
-import Day03
-import Day04
-import Day05
-import Day06
-import Day07
-import Day08
-import Day09
-import Day10
-import Day11
-import Day12
-import Day13
-import Day14
-import Day15
-import Day16
-import Day17
-import Day18
 import DayProblem
 import System.Environment (getArgs)
 import Text.Printf (printf)
+import Year (dataPath, days)
 
 loadData :: String -> IO [String]
 loadData filename = do
@@ -37,26 +20,6 @@ red str = "\27[31m" ++ str ++ "\27[0m"
 
 main :: IO ()
 main = do
-  let days =
-        [ Day01.cases,
-          Day02.cases,
-          Day03.cases,
-          Day04.cases,
-          Day05.cases,
-          Day06.cases,
-          Day07.cases,
-          Day08.cases,
-          Day09.cases,
-          Day10.cases,
-          Day11.cases,
-          Day12.cases,
-          Day13.cases,
-          Day14.cases,
-          Day15.cases,
-          Day16.cases,
-          Day17.cases,
-          Day18.cases
-        ]
   args <- getArgs
   case args of
     [dayStr] -> do
@@ -69,7 +32,7 @@ main = do
       putStrLn $ "No day specified. Running all " ++ show dayCount ++ " days..."
       zipWithM_ runDayCases [1 ..] days
 
-getFilename dayNum caseName = "data/Day" ++ padDay dayNum ++ caseName ++ ".txt"
+getFilename dayNum caseName = dataPath ++ "Day" ++ padDay dayNum ++ caseName ++ ".txt"
   where
     padDay dayNum = printf "%02d" dayNum
 
