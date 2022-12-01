@@ -11,15 +11,16 @@ cases = [Case solveA "Test" 24000, Problem solveA "Problem", Case solveB "Test" 
 solveA :: [String] -> Int
 solveA lines = maximum $ sumGroups lines
 
-sumGroups lines =
-  let lineGroups = groupBy (\a b -> (not . null) b) lines
-   in map sumGroup lineGroups
+groupLines :: [String] -> [[String]]
+groupLines = groupBy (\a b -> (not . null) b)
+
+sumGroups :: [String] -> [Int]
+sumGroups = map sumGroup . groupLines
 
 sumGroup :: [String] -> Int
-sumGroup lines = sum $ map read $ filter (not . null) lines
+sumGroup = sum . map read . filter (not . null)
 
 solveB :: [String] -> Int
 solveB lines =
-  let elvesSorted = sort $ sumGroups lines
-      top3 = drop (length elvesSorted - 3) elvesSorted
-   in sum top3
+  let top3 l = (drop (length l - 3) . sort) l
+   in (sum . top3 . sumGroups) lines
