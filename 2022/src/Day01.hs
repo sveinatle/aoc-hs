@@ -1,32 +1,25 @@
 module Day01 where
 
+import Data.List
 import DayProblem
+import Debug.Trace
 
-cases = [Case solveA "Test" 7, Problem solveA "Problem", Case solveB "Test" 5, Problem solveB "Problem"]
+log2 v = trace (show v) v
+
+cases = [Case solveA "Test" 24000, Problem solveA "Problem", Case solveB "Test" 45000, Problem solveB "Problem"]
 
 solveA :: [String] -> Int
-solveA lines = countInc 0 (map read lines)
+solveA lines = maximum $ sumGroups lines
 
-countInc :: Int -> [Int] -> Int
-countInc sum [] = sum
-countInc sum [a] = sum
-countInc sum (a : b : rest)
-  | a < b = countInc (sum + 1) (b : rest)
-  | otherwise = countInc sum (b : rest)
+sumGroups lines =
+  let lineGroups = groupBy (\a b -> (not . null) b) lines
+   in map sumGroup lineGroups
 
-solveA2 :: [String] -> Int
-solveA2 lines = countIfInc $map read lines
-
-countIfInc :: [Int] -> Int
-countIfInc nums =
-  let pairs = zip nums (tail nums)
-   in length $ filter (uncurry (<)) pairs
+sumGroup :: [String] -> Int
+sumGroup lines = sum $ map read $ filter (not . null) lines
 
 solveB :: [String] -> Int
-solveB lines = countIfInc $sumBy3 $map read lines
-
-sumBy3 :: [Int] -> [Int]
-sumBy3 nums =
-  let threes = zip3 nums (tail nums) (tail $tail nums)
-      sum3 (x, y, z) = x + y + z
-   in map sum3 threes
+solveB lines =
+  let elvesSorted = sort $ sumGroups lines
+      top3 = drop (length elvesSorted - 3) elvesSorted
+   in sum top3
