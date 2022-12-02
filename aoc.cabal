@@ -57,7 +57,7 @@ executable aoc2021
 
 executable aoc2022
     main-is:          Main.hs
-    other-modules:    Year DayProblem Day01
+    other-modules:    Year DayProblem Day01 Day02
 
     -- Modules included in this executable, other than Main.
     -- other-modules:
