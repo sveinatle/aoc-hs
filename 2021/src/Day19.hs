@@ -6,7 +6,7 @@ import Control.Applicative
 import Data.Char (digitToInt, isNumber)
 import Data.Complex (magnitude)
 import Data.Foldable (minimumBy)
-import Data.List (delete, find, findIndex, group, groupBy, intercalate, isInfixOf, nub, permutations, sort, sortBy, transpose, (\\))
+import Data.List (delete, find, findIndex, group, groupBy, intercalate, isInfixOf, maximumBy, nub, permutations, sort, sortBy, transpose, (\\))
 import Data.List.Split (splitOn)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -43,48 +43,55 @@ traceBeacons :: String -> [Beacon] -> [Beacon]
 traceBeacons msg beacons = trace (msg ++ "\n" ++ showBeacons beacons) beacons
 
 traceState :: (Solution, Prob) -> (Solution, Prob)
-traceState (Solution knownBeacons, Prob scanners) =
+traceState (Solution deltas knownBeacons, Prob scanners) =
   trace
     ( show (length scanners) ++ " scanners. "
         ++ show (length knownBeacons)
         ++ " known beacons:\n"
         ++ showBeacons knownBeacons
     )
-    (Solution knownBeacons, Prob scanners)
+    (Solution deltas knownBeacons, Prob scanners)
 
 inspect :: Show a => a -> Int
 inspect value = trace (show value) 0
 
-solveA :: [String] -> Int
-solveA lines =
+solve :: [String] -> Solution
+solve lines =
   let problem = readProblem lines
       (firstScanner, remainingProblems) = takeScanner 0 problem
-      initialSolution = Solution (getBeacons firstScanner)
+      initialSolution = Solution [] (getBeacons firstScanner)
       nullScanners (_, Prob scanners) = null scanners
       (solution, nullProblems) = until nullScanners iterateState (initialSolution, remainingProblems)
-   in (length . knownBeacons) solution
+   in solution
+
+solveA :: [String] -> Int
+solveA = length . knownBeacons . solve
 
 iterateState :: (Solution, Prob) -> (Solution, Prob)
-iterateState (Solution knownBeacons, Prob scanners) =
-  let (newBeacons, remainingScanners) = locateNextScanner knownBeacons scanners
-   in (Solution ((nub . sort) (knownBeacons ++ newBeacons)), Prob remainingScanners)
+iterateState (Solution deltas knownBeacons, Prob scanners) =
+  let ((delta, newBeacons), remainingScanners) = locateNextScanner knownBeacons scanners
+   in ( Solution
+          (delta : deltas)
+          ((nub . sort) (knownBeacons ++ newBeacons)),
+        Prob remainingScanners
+      )
 
-locateNextScanner :: [Beacon] -> [Scanner] -> ([Beacon], [Scanner])
+locateNextScanner :: [Beacon] -> [Scanner] -> ((Coord, [Beacon]), [Scanner])
 locateNextScanner knownBeacons scanners =
   case takeFirstJust (tryMatchScanner knownBeacons) scanners of
-    Just (matchedBeacons, remainingScanners) -> (matchedBeacons, remainingScanners)
+    Just match -> match
     Nothing -> error "Failed to find next scanner"
 
-tryMatchScanner :: [Beacon] -> Scanner -> Maybe [Beacon]
+tryMatchScanner :: [Beacon] -> Scanner -> Maybe (Coord, [Beacon])
 tryMatchScanner knownBeacons (Scanner scannerBeacons) =
   case takeFirstJust (tryMatchBeacons knownBeacons) (getRotations scannerBeacons) of
-    Just (matchedBeacons, _) -> Just matchedBeacons
+    Just (matchInfo, _) -> Just matchInfo
     Nothing -> Nothing
 
-tryMatchBeacons :: [Beacon] -> [Beacon] -> Maybe [Beacon]
+tryMatchBeacons :: [Beacon] -> [Beacon] -> Maybe (Coord, [Beacon])
 tryMatchBeacons knownBeacons candidateBeacons =
   case tryFindDelta (map coord knownBeacons) (map coord candidateBeacons) of
-    Just delta -> Just (map (moveBeacon delta) candidateBeacons)
+    Just delta -> Just (delta, map (moveBeacon delta) candidateBeacons)
     Nothing -> Nothing
 
 tryFindDelta :: [Coord] -> [Coord] -> Maybe Coord
@@ -139,13 +146,10 @@ instance Show Beacon where
 
 data Scanner = Scanner {getBeacons :: [Beacon]} deriving (Show)
 
-data Solution = Solution {knownBeacons :: [Beacon]}
+data Solution = Solution {getDeltas :: [Coord], knownBeacons :: [Beacon]}
 
 instance Show Solution where
-  show (Solution bs) = intercalate "\n" $ map show $ sort bs
-
-addBeacons :: Solution -> [Beacon] -> Solution
-addBeacons (Solution bs) newBeacons = Solution (nub (newBeacons ++ bs))
+  show (Solution deltas bs) = intercalate "\n" $ map show $ sort bs
 
 data Prob = Prob [Scanner] deriving (Show)
 
@@ -172,4 +176,13 @@ readProblem =
     . filter (not . isInfixOf "scanner")
 
 solveB :: [String] -> Int
-solveB lines = -1
+solveB lines =
+  let deltas = (0, 0, 0) : (getDeltas . solve) lines
+   in maximum $ map (uncurry manhattan) $ combos deltas deltas
+
+manhattan (x1, y1, z1) (x2, y2, z2) =
+  sum
+    [ abs (x1 - x2),
+      abs (y1 - y2),
+      abs (z1 - z2)
+    ]
