@@ -41,19 +41,30 @@ runDayCases dayNum cases = do
   takeWhileM (solveCase dayNum) cases
   return ()
 
+loadAndRunCase dayNum solver caseName = do
+  caseData <- loadData $ getFilename dayNum caseName
+  return $ solver caseData
+
+checkTestResult dayNum caseName caseResult expectedResult =
+  if caseResult == expectedResult
+    then do
+      putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ show caseResult
+      return True
+    else do
+      putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ show caseResult
+      return False
+
 solveCase dayNum (Case solver caseName expectedResult) = do
-  caseData <- loadData $ getFilename dayNum caseName
-  let caseResult = solver caseData
-      testPassed
-        | caseResult == expectedResult = do
-          putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ show caseResult
-          return True
-        | otherwise = do
-          putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ show caseResult
-          return False
-  testPassed
+  caseResult <- loadAndRunCase dayNum solver caseName
+  checkTestResult dayNum caseName caseResult expectedResult
+solveCase dayNum (CaseStr solver caseName expectedResult) = do
+  caseResult <- loadAndRunCase dayNum solver caseName
+  checkTestResult dayNum caseName caseResult expectedResult
 solveCase dayNum (Problem solver caseName) = do
-  caseData <- loadData $ getFilename dayNum caseName
-  let caseResult = solver caseData
-   in putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
+  caseResult <- loadAndRunCase dayNum solver caseName
+  putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
+  return True
+solveCase dayNum (ProblemStr solver caseName) = do
+  caseResult <- loadAndRunCase dayNum solver caseName
+  putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
   return True
