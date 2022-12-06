@@ -3,6 +3,7 @@ module Main where
 import Control.Monad (zipWithM_)
 import Control.Monad.Loops (takeWhileM)
 import DayProblem
+import Debug.Trace
 import System.Environment (getArgs)
 import Text.Printf (printf)
 import Year (dataPath, days)
