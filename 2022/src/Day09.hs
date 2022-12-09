@@ -59,10 +59,9 @@ move (mx, my) history =
       t2 =
         if abs dx <= 1 && abs dy <= 1
           then (tx, ty) -- Stay put. Only need to move tail when it is too far away.
-          else -- Tail can only be too far away in a single dimension. If it is, then move it close. It should then also be in the same row/col as the head in the other dimension.
-
-            ( hx2 + if abs dx > 1 then dx `div` abs dx else 0,
-              hy2 + if abs dy > 1 then dy `div` abs dy else 0
+          else
+            ( hx2 + (dx `quot` 2), -- Distance of 2 will become 1 to catch up. 1 will become 0, aligning it with movement direction of the head.
+              hy2 + (dy `quot` 2) -- (2,2) will become (1,1), letting it catch up diagonally.
             )
    in (h2, t2) : history
 
