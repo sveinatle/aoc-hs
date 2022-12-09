@@ -21,23 +21,26 @@ t' txt v = trace (txt ++ show v) v
 cases =
   [ Case solveA "Test" 13,
     Problem solveA "Problem",
-    Case solveB "Test" 0,
+    Case solveB "Test" 1,
+    Case solveB "Test2" 36,
     Problem solveB "Problem"
   ]
 
 type Pos = (Int, Int)
 
+type Tails = [Pos]
+
 type Movement = (Int, Int)
 
-type State = (Pos, Pos)
+type State = (Pos, Tails)
 
 type History = [State]
 
 solveA :: [String] -> Int
-solveA lines = length $ nub $ sort $ map snd $ foldl processLine [((0, 0), (0, 0))] lines
+solveA lines = length $ nub $ sort $ map (last . snd) $ foldl processLine [((0, 0), [(0, 0)])] lines
 
 processLine :: History -> String -> History
-processLine history (dirChar : ' ' : count) = iterate (move (c2m dirChar)) history !! read count
+processLine history (dirChar : ' ' : count) = iterate (move2 (c2m dirChar)) history !! read count
 processLine _ line = error $ "Unexpected input: " ++ line
 
 c2m 'U' = (0, 1)
@@ -46,24 +49,25 @@ c2m 'R' = (1, 0)
 c2m 'L' = (-1, 0)
 c2m _ = error "Unexpected direction."
 
+move2 (mx, my) history =
+  let ((hx, hy), tails) = head history
+      h2 = (hx + mx, hy + my)
+      newTails = tail $ scanl move h2 tails
+   in (h2, newTails) : history
+
 -- h = head
 -- t = tail
 -- m = movement
 -- d = distance
-move :: Movement -> History -> History
-move (mx, my) history =
-  let ((hx, hy), (tx, ty)) = head history
-      h2 = (hx + mx, hy + my)
-      (hx2, hy2) = h2
-      (dx, dy) = (tx - hx2, ty - hy2)
-      t2 =
-        if abs dx <= 1 && abs dy <= 1
-          then (tx, ty) -- Stay put. Only need to move tail when it is too far away.
-          else
-            ( hx2 + (dx `quot` 2), -- Distance of 2 will become 1 to catch up. 1 will become 0, aligning it with movement direction of the head.
-              hy2 + (dy `quot` 2) -- (2,2) will become (1,1), letting it catch up diagonally.
-            )
-   in (h2, t2) : history
+move :: Pos -> Pos -> Pos
+move (hx, hy) (tx, ty) =
+  let (dx, dy) = (tx - hx, ty - hy)
+   in if abs dx <= 1 && abs dy <= 1
+        then (tx, ty) -- Stay put. Only need to move tail when it is too far away.
+        else
+          ( hx + (dx `quot` 2), -- Distance of 2 will become 1 to catch up. 1 will become 0, aligning it with movement direction of the head.
+            hy + (dy `quot` 2) -- (2,2) will become (1,1), letting it catch up diagonally.
+          )
 
 solveB :: [String] -> Int
-solveB lines = 0
+solveB lines = length $ nub $ sort $ map (last . snd) $ foldl processLine [((0, 0), replicate 9 (0, 0))] lines
