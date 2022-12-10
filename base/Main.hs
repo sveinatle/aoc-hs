@@ -46,26 +46,28 @@ loadAndRunCase dayNum solver caseName = do
   caseData <- loadData $ getFilename dayNum caseName
   return $ solver caseData
 
-checkTestResult dayNum caseName caseResult expectedResult =
+checkTestResult dayNum caseName caseResult expectedResult shower =
   if caseResult == expectedResult
     then do
-      putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ show caseResult
+      putStrLn $ green $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] succeeded. Result = " ++ shower caseResult
       return True
     else do
-      putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ show caseResult
+      putStrLn $ red $ "Day " ++ show dayNum ++ " test case [" ++ caseName ++ "] failed. Result = " ++ shower caseResult ++ "\nExpected = " ++ shower expectedResult
       return False
+
+stringResultHandler str = if elem '\n' str then '\n' : str else str -- Prefix newline to get left-aligned multi-line output.
 
 solveCase dayNum (Case solver caseName expectedResult) = do
   caseResult <- loadAndRunCase dayNum solver caseName
-  checkTestResult dayNum caseName caseResult expectedResult
+  checkTestResult dayNum caseName caseResult expectedResult show
 solveCase dayNum (CaseStr solver caseName expectedResult) = do
   caseResult <- loadAndRunCase dayNum solver caseName
-  checkTestResult dayNum caseName caseResult expectedResult
+  checkTestResult dayNum caseName caseResult expectedResult stringResultHandler
 solveCase dayNum (Problem solver caseName) = do
   caseResult <- loadAndRunCase dayNum solver caseName
   putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
   return True
 solveCase dayNum (ProblemStr solver caseName) = do
   caseResult <- loadAndRunCase dayNum solver caseName
-  putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ show caseResult
+  putStrLn $ green $ "Day " ++ show dayNum ++ " problem result = " ++ stringResultHandler caseResult
   return True

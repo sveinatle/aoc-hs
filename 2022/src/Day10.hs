@@ -7,7 +7,7 @@ import Data.Foldable (Foldable (fold, foldr'))
 import Data.Ix (Ix (inRange))
 import Data.List
 import Data.List.Split (chunksOf, splitOn, splitWhen)
-import DayProblem (Case (Case, Problem))
+import DayProblem (Case (Case, CaseStr, Problem, ProblemStr))
 import Debug.Trace
 import GHC.Real (reduce)
 import Text.Regex (matchRegex, mkRegex)
@@ -21,8 +21,17 @@ t' txt v = trace (txt ++ show v) v
 cases =
   [ Case solveA "Test" 13140,
     Problem solveA "Problem",
-    Case solveB "Test" 0,
-    Problem solveB "Problem"
+    CaseStr solveB "Test" $
+      intercalate
+        "\n"
+        [ "##..##..##..##..##..##..##..##..##..##..",
+          "###...###...###...###...###...###...###.",
+          "####....####....####....####....####....",
+          "#####.....#####.....#####.....#####.....",
+          "######......######......######......####",
+          "#######.......#######.......#######....."
+        ],
+    ProblemStr solveB "Problem"
   ]
 
 type State a = (Int, Int, [a])
@@ -56,7 +65,7 @@ render (cycle, x, pixels) line =
 
 draw str =
   let lines = chunksOf 40 (reverse str)
-   in t0 $ map t0 lines
+   in intercalate "\n" lines
 
-solveB :: [String] -> Int
+solveB :: [String] -> String
 solveB lines = draw $ thd $ foldl render (1, 1, []) lines
