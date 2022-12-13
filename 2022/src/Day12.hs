@@ -67,7 +67,7 @@ setDistance x y d m =
 updateCell :: Int -> Int -> Int -> Int -> Map -> Map
 updateCell x y fromHeight distance m =
   if x >= 0 && x < mWidth m && y >= 0 && y < mHeight m
-    && fromHeight + 1 >= cHeight (getCell x y m)
+    && cHeight (getCell x y m) >= fromHeight - 1
     && cDistance (getCell x y m) > distance
     then (updateNeighbours x y . setDistance x y distance) m
     else m
@@ -84,13 +84,11 @@ updateNeighbours x y m =
 solveA :: [String] -> Int
 solveA lines =
   let (m, (sx, sy), (ex, ey)) = readProblem lines
-   in cDistance $ getCell ex ey $ updateCell sx sy 0 0 m
-
-drawMap m = trace (show $ V.map cDistance (mCells m)) m
+   in cDistance $ getCell sx sy $ updateCell ex ey (ord 'z' - ord 'a') 0 m
 
 solveB :: [String] -> Int
 solveB lines =
   let (m, (sx, sy), (ex, ey)) = readProblem lines
-      finished = drawMap $ updateCell sx sy 0 0 m
-      startCell = V.maximumBy (\a b -> compare (cDistance a) (cDistance b)) (V.filter ((== 0) . cHeight) (mCells finished))
-   in cDistance (getCell ex ey finished) - cDistance startCell
+      finished = updateCell ex ey (ord 'z' - ord 'a') 0 m
+      startCell = V.minimumBy (\a b -> compare (cDistance a) (cDistance b)) (V.filter ((== 0) . cHeight) (mCells finished))
+   in cDistance startCell
