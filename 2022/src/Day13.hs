@@ -64,7 +64,8 @@ comparePackets :: Packet -> Packet -> Ordering
 comparePackets (Num n1) (Num n2) = compare n1 n2
 comparePackets (Num n1) (List l2) = comparePackets (List [Num n1]) (List l2)
 comparePackets (List l1) (Num n2) = comparePackets (List l1) (List [Num n2])
-comparePackets (List []) (List l2) = LT
+comparePackets (List []) (List []) = EQ
+comparePackets (List []) (List _) = LT
 comparePackets (List _) (List []) = GT
 comparePackets (List l1) (List l2) = case comparePackets (head l1) (head l2) of
   EQ -> comparePackets (List (tail l1)) (List (tail l2))
