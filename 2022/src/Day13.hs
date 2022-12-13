@@ -20,7 +20,7 @@ t' txt v = trace (txt ++ show v) v
 cases =
   [ Case solveA "Test" 13,
     Problem solveA "Problem",
-    Case solveB "Test" 0,
+    Case solveB "Test" 140,
     Problem solveB "Problem"
   ]
 
@@ -29,6 +29,12 @@ data Packet = List [Packet] | Num Int
 instance Show Packet where
   show (Num n) = show n
   show (List l) = show l
+
+instance Ord Packet where
+  compare a b = comparePackets a b
+
+instance Eq Packet where
+  (==) a b = EQ == compare a b
 
 tracePair :: (Show a, Show b) => (a, b) -> (a, b)
 tracePair (p1, p2) = trace (show p1 ++ "\n" ++ show p2 ++ "\n") (p1, p2)
@@ -75,4 +81,10 @@ solveA :: [String] -> Int
 solveA = sum . map (+ 1) . elemIndices True . map (not . (==) GT . uncurry comparePackets . readPair) . splitOn [""]
 
 solveB :: [String] -> Int
-solveB lines = 0
+solveB lines =
+  let d1 = List [List [Num 2]]
+      d2 = List [List [Num 6]]
+      packets = sort $ [d1, d2] ++ (map (fst . readPacket) . filter (not . null)) lines
+   in case (elemIndex d1 packets, elemIndex d2 packets) of
+        (Just a, Just b) -> (a + 1) * (b + 1)
+        _ -> error "Decoder keys not found."
