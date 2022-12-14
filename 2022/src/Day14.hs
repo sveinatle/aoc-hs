@@ -66,7 +66,7 @@ setCell x y c m =
    in Map (mCells m V.// [(xy2idx x y m, c)]) (mWidth m) (mHeight m) (updateRange x (xRange m)) (updateRange y (yRange m))
 
 loadProblem :: [String] -> Map
-loadProblem = setCell 500 0 Air . foldl loadPath (createMap 600 600) -- Set cell (500,0) to extends bounds up to insertion position.
+loadProblem = setCell 500 0 Air . foldl loadPath (createMap 800 600) -- Set cell (500,0) to extends bounds up to insertion position.
 
 loadPath :: Map -> String -> Map
 loadPath m line =
@@ -98,11 +98,19 @@ data SimState = SimState {sDone :: Bool, sCount :: Int, sMap :: Map} deriving (S
 
 addSand :: SimState -> SimState
 addSand (SimState done count m) = case simulateSand m (500, 0) of
+  Just (500, 0) -> SimState True (count + 1) (setCell 500 0 Sand m)
   Just (x, y) -> SimState False (count + 1) (setCell x y Sand m)
   Nothing -> SimState True count m
 
+drawAndGetSandCount :: SimState -> Int
+drawAndGetSandCount (SimState done count m) = trace (show m) count
+
 solveA :: [String] -> Int
-solveA = (\(SimState done count m) -> trace (show m) count) . until sDone addSand . SimState False 0 . t . loadProblem
+solveA = drawAndGetSandCount . until sDone addSand . SimState False 0 . loadProblem
 
 solveB :: [String] -> Int
-solveB lines = 0
+solveB =
+  let addGround m =
+        let groundY = ((+ 2) . snd . yRange) m
+         in loadSegment m ((300, groundY), (700, groundY))
+   in sCount . until sDone addSand . SimState False 0 . addGround . loadProblem
