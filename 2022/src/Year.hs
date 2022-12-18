@@ -15,6 +15,7 @@ import Day12
 import Day13
 import Day14
 import Day15
+import Day16
 
 days =
   [ Day01.cases,
@@ -31,7 +32,8 @@ days =
     Day12.cases,
     Day13.cases,
     Day14.cases,
-    Day15.cases
+    Day15.cases,
+    Day16.cases
   ]
 
 dataPath = "2022/data/"
