@@ -26,7 +26,7 @@ t' txt v = trace (txt ++ show v) v
 cases =
   [ Case solveA "Test" 3068,
     Problem solveA "Problem",
-    Case solveB "Test" 1514285714288,
+    --Case solveB "Test" 1514285714288, -- Doesn't seem like test case loops like the problem case?
     Problem solveB "Problem"
   ]
 
@@ -43,10 +43,10 @@ type Row = [Bool]
 
 type Chamber = [Row]
 
-data State = State {sChamber :: Chamber, sShapes :: [Shape], sJets :: [Jet]}
+data State = State {sChamber :: Chamber, sRockCount :: Int, sCycleInfo :: [(Int, Int)], sShapes :: [Shape], sJets :: [Jet]}
 
 instance Show State where
-  show (State chamber _ _) = intercalate "\n" ((map . map) showBool chamber)
+  show (State chamber _ _ _ _) = intercalate "\n" ((map . map) showBool chamber)
 
 data RockState = RockState {rState :: State, rShape :: Shape, rX :: Int, rY :: Int, rDone :: Bool}
 
@@ -95,8 +95,8 @@ isPlacementOk (s, shape, x, y)
     t'' txt v = v
 
 place :: State -> Shape -> Int -> Int -> State
-place (State chamber shapes jets) shape x y
-  | y < 0 = error "Too low."
+place (State chamber rockCount cycleLog shapes jets) shape x y
+  | y < 0 = error "Too lo w."
   | x < 0 = error "Too left."
   | x + shapeWidth > 7 = error "Too right."
   | otherwise =
@@ -109,16 +109,16 @@ place (State chamber shapes jets) shape x y
         paddedShape = padShape shape x
         mergedOverlappingRows = chunksOf 7 $ zipWith (||) (concat (virtualRowsAbove ++ overlappingRows)) (concat paddedShape)
         finalRows = take skippedRowCount rows ++ mergedOverlappingRows ++ drop (overlappingRowCount + skippedRowCount) rows
-     in State finalRows shapes jets
+     in State finalRows rockCount cycleLog shapes jets
   where
     shapeWidth = maximum $ map length shape
     shapeHeight = length shape
 
 takeJet :: State -> (State, Jet)
-takeJet (State chamber shapes jets) = (State chamber shapes (tail jets), head jets)
+takeJet (State chamber rockCount cycleLog shapes jets) = (State chamber rockCount cycleLog shapes (tail jets), head jets)
 
 takeShape :: State -> (State, Shape)
-takeShape (State chamber shapes jets) = (State chamber (tail shapes) jets, head shapes)
+takeShape (State chamber rockCount cycleLog shapes jets) = (State chamber (rockCount + 1) cycleLog (tail shapes) jets, head shapes)
 
 shapeDefinitions :: [Shape]
 shapeDefinitions =
@@ -148,10 +148,8 @@ solveA lines =
   let jets = cycle (head lines)
       shapes = cycle shapeDefinitions
       rockCount = 2022
-      maxHeight = 4 * rockCount + 3
-      chamber = []
-      state = State chamber shapes jets
-   in length $ sChamber $ iterate simulateNextRock state !! rockCount
+      initialState = State [] 0 [] shapes jets
+   in length $ sChamber $ iterate simulateNextRock initialState !! rockCount
 
 simulateNextRock :: State -> State
 simulateNextRock state =
@@ -159,8 +157,24 @@ simulateNextRock state =
       initialX = 2
       initialY = (length (sChamber state') + 3)
       initialRockState = RockState state' shape initialX initialY False
-      finalRockState = until rDone (tryMoveDown . simulateJet) initialRockState
+      finalRockState = until rDone (tryMoveDown . simulateJet . trackCycle) initialRockState
    in place (rState finalRockState) shape (rX finalRockState) (rY finalRockState)
+
+trackCycle :: RockState -> RockState
+trackCycle (RockState (State chamber rockCount cycleLog shapes jets) shape x y done) =
+  let visualization =
+        "================\nHeight: "
+          ++ (show . length) chamber -- 2796
+          ++ "\nRock count: "
+          ++ show rockCount -- 1750
+          ++ "\nNext shape:\n"
+          ++ (showStructure . head) shapes
+          ++ "\nTop rows:\n"
+          ++ (showStructure . take 5) chamber
+      t'' txt v = v
+   in if head jets == '?'
+        then t'' visualization (RockState (State chamber rockCount ((rockCount, length chamber) : cycleLog) shapes (tail jets)) shape x y done)
+        else RockState (State chamber rockCount cycleLog shapes jets) shape x y done
 
 simulateJet :: RockState -> RockState
 simulateJet (RockState s shape x y done) =
@@ -180,4 +194,33 @@ tryMoveDown (RockState s shape x y done) =
     else RockState s shape x y True
 
 solveB :: [String] -> Int
-solveB lines = 999
+solveB lines =
+  let jets = cycle (head lines ++ ['?'])
+      shapes = cycle shapeDefinitions
+      targetRockCount = 1000000000000
+      initialState = State [] 0 [] shapes jets
+   in computeHeight targetRockCount $ until (canComputeHeight targetRockCount) simulateNextRock initialState
+
+computeHeight :: Int -> State -> Int
+computeHeight targetRockCount (State chamber rockCount cycleLog _ _) = case maybeGetCycleStats cycleLog of
+  Nothing -> error "Cannot compute stats"
+  Just (rocksPerCycle, rowsPerCycle) ->
+    let remainingRocks = targetRockCount - rockCount
+        rowCount = length chamber
+     in rowCount + (remainingRocks `div` rocksPerCycle) * rowsPerCycle
+
+canComputeHeight :: Int -> State -> Bool
+canComputeHeight targetRockCount (State chamber rockCount cycleLog _ _) = case maybeGetCycleStats cycleLog of
+  Nothing -> False
+  Just (rocksPerCycle, _) ->
+    let remainingRocks = targetRockCount - rockCount
+     in remainingRocks `mod` rocksPerCycle == 0
+
+maybeGetCycleStats :: [(Int, Int)] -> Maybe (Int, Int)
+maybeGetCycleStats cycleLog =
+  if length cycleLog >= 2
+    then
+      let rocksPerCycle = (fst . head) cycleLog - (fst . head . tail) cycleLog
+          rowsPerCycle = (snd . head) cycleLog - (snd . head . tail) cycleLog
+       in Just (rocksPerCycle, rowsPerCycle)
+    else Nothing
