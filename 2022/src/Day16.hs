@@ -62,38 +62,41 @@ visitNode connections node visitedNodes allNodes =
 getShortestPaths :: [Connection] -> String -> NodePaths
 getShortestPaths connections from = visitNode connections from [from] (Map.fromList [(from, [])])
 
-openValve :: Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
-openValve valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure valve =
+openValve :: Int -> Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
+openValve minuteCount valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure valve =
   let valvePressure = valves Map.! valve
       totalPressureAfterMinute = totalPressure + pressurePerMinute
       pressurePerMinuteAfterMinute = pressurePerMinute + valvePressure
-   in gotoValves valves shortestPaths visitedValves unvisitedValves (minute + 1) pressurePerMinuteAfterMinute totalPressureAfterMinute
+   in gotoValves minuteCount valves shortestPaths visitedValves unvisitedValves (minute + 1) pressurePerMinuteAfterMinute totalPressureAfterMinute
 
-gotoValve :: Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
-gotoValve valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure toValve =
+gotoValve :: Int -> Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
+gotoValve minuteCount valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure toValve =
   let fromValve = head visitedValves
       pathsFromValve = shortestPaths Map.! fromValve
       distanceToValve = length $ pathsFromValve Map.! toValve
-   in if minute + distanceToValve < 30 -- Enough time to go to, open and release any pressure from the next valve?
-        then handleValve valves shortestPaths visitedValves unvisitedValves (minute + distanceToValve) pressurePerMinute (totalPressure + distanceToValve * pressurePerMinute) toValve
-        else calculateRemainingPressure minute pressurePerMinute totalPressure
+   in if minute + distanceToValve < minuteCount -- Enough time to go to, open and release any pressure from the next valve?
+        then handleValve minuteCount valves shortestPaths visitedValves unvisitedValves (minute + distanceToValve) pressurePerMinute (totalPressure + distanceToValve * pressurePerMinute) toValve
+        else calculateRemainingPressure minuteCount minute pressurePerMinute totalPressure
 
-gotoValves :: Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> Int
-gotoValves valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure =
+gotoValves :: Int -> Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> Int
+gotoValves minuteCount valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure =
   if null unvisitedValves
-    then calculateRemainingPressure minute pressurePerMinute totalPressure
-    else maximum $ map (gotoValve valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure) unvisitedValves
+    then calculateRemainingPressure minuteCount minute pressurePerMinute totalPressure
+    else maximum $ map (gotoValve minuteCount valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure) unvisitedValves
 
-calculateRemainingPressure :: Int -> Int -> Int -> Int
-calculateRemainingPressure minute pressurePerMinute totalPressure = totalPressure + pressurePerMinute * (31 - minute)
+calculateRemainingPressure :: Int -> Int -> Int -> Int -> Int
+calculateRemainingPressure minuteCount minute pressurePerMinute totalPressure = totalPressure + pressurePerMinute * (minuteCount + 1 - minute)
 
-handleValve :: Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
-handleValve valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure valve =
+handleValve :: Int -> Map String Int -> Map String NodePaths -> [String] -> [String] -> Int -> Int -> Int -> String -> Int
+handleValve minuteCount valves shortestPaths visitedValves unvisitedValves minute pressurePerMinute totalPressure valve =
   let visitedValves' = valve : visitedValves
       unvisitedValves' = filter (/= valve) unvisitedValves
    in if valve `elem` unvisitedValves
-        then openValve valves shortestPaths visitedValves' unvisitedValves' minute pressurePerMinute totalPressure valve
-        else gotoValves valves shortestPaths visitedValves' unvisitedValves' minute pressurePerMinute totalPressure
+        then openValve minuteCount valves shortestPaths visitedValves' unvisitedValves' minute pressurePerMinute totalPressure valve
+        else gotoValves minuteCount valves shortestPaths visitedValves' unvisitedValves' minute pressurePerMinute totalPressure
+
+getMaxPressure :: Int -> [(String, Int)] -> Map String NodePaths -> [String] -> Int
+getMaxPressure minuteCount valves shortestPaths interestingValves = handleValve minuteCount (Map.fromList valves) shortestPaths [] interestingValves 1 0 0 "AA"
 
 solveA :: [String] -> Int
 solveA lines =
@@ -105,8 +108,37 @@ solveA lines =
           zip
             interestingValvesAndStartingValve
             (map (getShortestPaths connections) interestingValvesAndStartingValve)
-      highestPressure = handleValve (Map.fromList valves) shortestPaths [] interestingValves 1 0 0 "AA"
-   in highestPressure -- trace (intercalate "\n" $ map show (Map.toList shortestPaths)) 0
+      highestPressure = getMaxPressure 30 valves shortestPaths interestingValves
+   in highestPressure
 
 solveB :: [String] -> Int
-solveB lines = 0
+solveB lines =
+  let (valves, connections) = unzip $ map readValve lines
+      interestingValves = map fst $ filter ((> 0) . snd) valves
+      interestingValvesAndStartingValve = ("AA" : interestingValves)
+      shortestPaths =
+        Map.fromList $
+          zip
+            interestingValvesAndStartingValve
+            (map (getShortestPaths connections) interestingValvesAndStartingValve)
+      scenarios = map (splitWork interestingValves) [0 .. (2 ^ length interestingValves)]
+      scenarioCount = length scenarios
+      getScenarioPressure (scenarioIdx, (selfValves, elephantValves)) =
+        let selfPressure = getMaxPressure 26 valves shortestPaths selfValves
+            elefantPressure = getMaxPressure 26 valves shortestPaths elephantValves
+            totalPressure = selfPressure + elefantPressure
+         in maybeLogProgress scenarioIdx scenarioCount totalPressure
+   in maximum $ map getScenarioPressure scenarios
+
+splitWork :: [String] -> Int -> (Int, ([String], [String]))
+splitWork valves scenarioIdx =
+  let bits = take (length valves) $ map (\bit -> (scenarioIdx `div` (2 ^ bit)) `mod` 2 == 1) [0 ..] -- Generate bit array with one bit per valve.
+      valvesWithBits = zip valves bits
+      selfValves = map fst $ filter snd valvesWithBits -- Give true bits to self, false bits to elephant.
+      elephantValves = map fst $ filter (not . snd) valvesWithBits
+   in (scenarioIdx, (selfValves, elephantValves))
+
+maybeLogProgress scenarioIdx scenarioCount v =
+  if scenarioCount > 100 && scenarioIdx `mod` (1 + scenarioCount `div` 100) == 0
+    then trace (show (100 * scenarioIdx `div` scenarioCount) ++ "%") v
+    else v
