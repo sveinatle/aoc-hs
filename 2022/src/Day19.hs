@@ -31,8 +31,8 @@ t' txt v = trace (txt ++ show v) v
 cases =
   [ Case solveA "Test" 33,
     Problem solveA "Problem",
-    Case solveB "Test" 0,
-    Problem solveB "Problem"
+    Case solveBTest "Test" (62 * 56),
+    Problem solveBProblem "Problem"
   ]
 
 type Robots = [Int]
@@ -93,29 +93,34 @@ getNextStatesFromState botCosts (bots, resources) =
       nextStates = Set.map stateFromAddBotsOption newBotOptionsWithRemainingResources
    in nextStates
 
-getStatesAfterMinute :: Int -> [RobotCost] -> Set State -> Int -> Set State
-getStatesAfterMinute bpId botCosts states minute =
+getStatesAfterMinute :: Int -> [RobotCost] -> Int -> Set State -> Int -> Set State
+getStatesAfterMinute bpId botCosts pruneFactor states minute =
   let allNextStates = Set.unions $ Set.map (getNextStatesFromState botCosts) states
       scoredStates = map (\s -> (scoreState botCosts s, s)) $ Set.toList allNextStates
       bestScore = fst $ maximum scoredStates
       nextStates =
         if length allNextStates > 100000
-          then --then Set.map snd $ Set.filter ((> (bestScore * 8) `div` 10) . fst) scoredStates
-          --(map snd . take 10000 . reverse . sort) scoredStates
-            (map snd . filter ((> (bestScore * 5) `div` 10) . fst)) scoredStates
+          then (map snd . filter ((> (bestScore * minute) `div` pruneFactor) . fst)) scoredStates
           else Set.toList allNextStates
       bestGeodeCount = maximum $ map (last . snd) nextStates
    in trace (show bpId ++ "-" ++ show minute ++ ": " ++ show (length nextStates) ++ " states. Geodes: " ++ show bestGeodeCount) (Set.fromList nextStates)
 
-evaluateBlueprint :: Blueprint -> Int
-evaluateBlueprint (bpId, botCosts) =
-  let states = foldl (getStatesAfterMinute bpId botCosts) (Set.fromList [([1, 0, 0, 0], [0, 0, 0, 0])]) [1 .. 24]
+evaluateBlueprint :: Int -> Int -> Blueprint -> Int
+evaluateBlueprint minuteCount pruneFactor (bpId, botCosts) =
+  let states = foldl (getStatesAfterMinute bpId botCosts pruneFactor) (Set.fromList [([1, 0, 0, 0], [0, 0, 0, 0])]) [1 .. minuteCount]
    in maximum $ Set.map (last . snd) states
 
 solveA :: [String] -> Int
 solveA lines =
-  let maxGeodesPerBlueprint = t $ map (evaluateBlueprint . readBlueprint) lines
+  let maxGeodesPerBlueprint = map (evaluateBlueprint 24 40 . readBlueprint) lines
    in sum $ zipWith (*) maxGeodesPerBlueprint [1 ..]
 
-solveB :: [String] -> Int
-solveB lines = 999
+solveBTest :: [String] -> Int
+solveBTest lines =
+  let maxGeodesPerBlueprint = map (evaluateBlueprint 32 40 . readBlueprint) (take 3 lines)
+   in product maxGeodesPerBlueprint
+
+solveBProblem :: [String] -> Int
+solveBProblem lines =
+  let maxGeodesPerBlueprint = map (evaluateBlueprint 32 50 . readBlueprint) (take 3 lines)
+   in product maxGeodesPerBlueprint
