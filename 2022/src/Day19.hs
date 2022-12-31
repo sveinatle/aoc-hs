@@ -11,6 +11,9 @@ import Data.List
 import Data.List.Split (chunksOf, splitOn, splitWhen)
 import qualified Data.List.Split as V
 import Data.Maybe (isJust)
+import qualified Data.Maybe as Maybe
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.String (IsString)
 import Data.Vector (Vector)
 import qualified Data.Vector as V
@@ -32,15 +35,17 @@ cases =
     Problem solveB "Problem"
   ]
 
+type Robots = [Int]
+
 type Resources = [Int]
 
 type RobotCost = Resources
 
 type Blueprint = (Int, [RobotCost])
 
-rGeodes (_, _, _, g) = g
+type State = (Robots, Resources)
 
-minuteCount = 24
+rGeodes (_, _, _, g) = g
 
 addBot :: Int -> [Int] -> [Int]
 addBot idx bots = take idx bots ++ ((bots !! idx) + 1) : drop (idx + 1) bots
@@ -50,46 +55,67 @@ readBlueprint line = case matchRegex (mkRegex "Blueprint ([0-9]+): Each ore robo
   Just [bp, aOre, bOre, cOre, cClay, dOre, dObsidian] -> (read bp, [[read aOre, 0, 0, 0], [read bOre, 0, 0, 0], [read cOre, read cClay, 0, 0], [read dOre, 0, read dObsidian, 0]])
   _ -> error "Parse error."
 
-getNeededDays :: Int -> Int -> Int
-getNeededDays neededResource botCount = case (neededResource == 0, botCount == 0) of
-  (False, True) -> 99999
-  (True, True) -> 0
-  _ -> (neededResource + botCount - 1) `div` botCount
+scoreState costs (bots, resources) =
+  let oreBotScore = sum (costs !! 0)
+      clayBotScore = sum (costs !! 1)
+      obsBotScore =
+        let obsBotCost = costs !! 2
+         in (obsBotCost !! 0) * oreBotScore + (obsBotCost !! 1) * clayBotScore
+      geodeBotScore =
+        let geodeBotCost = costs !! 3
+         in (geodeBotCost !! 0) * oreBotScore + (geodeBotCost !! 2) * obsBotScore
+   in sum $ zipWith (*) bots [oreBotScore, clayBotScore, obsBotScore, geodeBotScore]
 
-tryEachBot :: Blueprint -> Int -> [Int] -> [Int] -> [Int] -> Int
-tryEachBot (bpId, costs) minute bots addedBots resources = maximum $ map (handleBot (bpId, costs) minute bots addedBots resources) [3, 2, 1, 0]
+tryAddOption :: [RobotCost] -> Robots -> Resources -> Int -> Maybe (Robots, Resources)
+tryAddOption costs bots resources botIdx =
+  let remainingResources = zipWith (-) resources (costs !! botIdx)
+   in if {-bots !! botIdx < 5 && -} all (>= 0) remainingResources
+        then Just (addBot botIdx bots, remainingResources)
+        else Nothing
 
-handleBot :: Blueprint -> Int -> [Int] -> [Int] -> [Int] -> Int -> Int
-handleBot (bpId, costs) minute bots addedBotsThisMinute resources botIdx =
-  let botCost = costs !! botIdx
-      remainingResources = zipWith (-) resources botCost
-      canCreateBotThisMinute = all (>= 0) remainingResources
-   in if canCreateBotThisMinute
-        then -- Can create bot now. Try to create another bot too.
+--then addEveryOption costs (addBot botIdx bots) remainingResources
+--else Set.empty
 
-          let addedBotsThisMinute' = take botIdx addedBotsThisMinute ++ ((addedBotsThisMinute !! botIdx) + 1) : drop (botIdx + 1) addedBotsThisMinute
-           in tryEachBot (bpId, costs) minute bots addedBotsThisMinute' remainingResources
-        else -- Move to minute when the bot can be created.
+addEveryOption :: [RobotCost] -> Robots -> Resources -> Set (Robots, Resources)
+addEveryOption costs bots resources =
+  let withoutMoreBot = (bots, resources)
+      withMoreBots = Maybe.mapMaybe (tryAddOption costs bots resources) [0, 1, 2, 3]
+   in --aaaa = Set.fromList $ drop (length withMoreBots -10) $ sortOn (reverse . fst) $ Set.toList withMoreBots
+      Set.fromList (withoutMoreBot : withMoreBots)
 
-          let resourcesAfterThisMinute = zipWith (+) resources bots
-              neededResourcesAfterThisMinute = zipWith (-) botCost resourcesAfterThisMinute
-              botsAfterThisMinute = zipWith (+) bots addedBotsThisMinute
-              neededMinutesAfterThisMinute = maximum $ zipWith getNeededDays neededResourcesAfterThisMinute botsAfterThisMinute
-              createBotMinute = minute + 1 + neededMinutesAfterThisMinute
-           in if createBotMinute < minuteCount
-                then
-                  let resourcesBeforeCreateBot = zipWith (\r b -> r + b * neededMinutesAfterThisMinute) resourcesAfterThisMinute botsAfterThisMinute
-                   in handleBot (bpId, costs) createBotMinute botsAfterThisMinute [0, 0, 0, 0] resourcesBeforeCreateBot botIdx
-                else -- Selected bot will not be created. Finish by computing final obsidian count.
-                  last resourcesAfterThisMinute + last botsAfterThisMinute * (minuteCount - minute)
+getAddBotsOptions :: [RobotCost] -> Resources -> Set (Robots, Resources)
+getAddBotsOptions costs resources = addEveryOption costs [0, 0, 0, 0] resources
+
+getNextStatesFromState :: [RobotCost] -> State -> Set State
+getNextStatesFromState botCosts (bots, resources) =
+  let newBotOptionsWithRemainingResources = getAddBotsOptions botCosts resources
+      stateFromAddBotsOption (addedBots, resources) = (zipWith (+) bots addedBots, zipWith (+) resources bots)
+      nextStates = Set.map stateFromAddBotsOption newBotOptionsWithRemainingResources
+   in nextStates
+
+getStatesAfterMinute :: Int -> [RobotCost] -> Set State -> Int -> Set State
+getStatesAfterMinute bpId botCosts states minute =
+  let allNextStates = Set.unions $ Set.map (getNextStatesFromState botCosts) states
+      scoredStates = map (\s -> (scoreState botCosts s, s)) $ Set.toList allNextStates
+      bestScore = fst $ maximum scoredStates
+      nextStates =
+        if length allNextStates > 100000
+          then --then Set.map snd $ Set.filter ((> (bestScore * 8) `div` 10) . fst) scoredStates
+          --(map snd . take 10000 . reverse . sort) scoredStates
+            (map snd . filter ((> (bestScore * 5) `div` 10) . fst)) scoredStates
+          else Set.toList allNextStates
+      bestGeodeCount = maximum $ map (last . snd) nextStates
+   in trace (show bpId ++ "-" ++ show minute ++ ": " ++ show (length nextStates) ++ " states. Geodes: " ++ show bestGeodeCount) (Set.fromList nextStates)
 
 evaluateBlueprint :: Blueprint -> Int
-evaluateBlueprint (bpId, costs) = tryEachBot (bpId, costs) 1 [1, 0, 0, 0] [0, 0, 0, 0] [0, 0, 0, 0]
+evaluateBlueprint (bpId, botCosts) =
+  let states = foldl (getStatesAfterMinute bpId botCosts) (Set.fromList [([1, 0, 0, 0], [0, 0, 0, 0])]) [1 .. 24]
+   in maximum $ Set.map (last . snd) states
 
 solveA :: [String] -> Int
 solveA lines =
-  let bestStatePerBlueprint = t $ map (evaluateBlueprint . readBlueprint) lines
-   in 999 --sum $ zipWith (*) bestStatePerBlueprint [1 ..]
+  let maxGeodesPerBlueprint = t $ map (evaluateBlueprint . readBlueprint) lines
+   in sum $ zipWith (*) maxGeodesPerBlueprint [1 ..]
 
 solveB :: [String] -> Int
 solveB lines = 999
