@@ -103,7 +103,7 @@ getStatesAfterMinute bpId botCosts pruneFactor states minute =
           then (map snd . filter ((> (bestScore * minute) `div` pruneFactor) . fst)) scoredStates
           else Set.toList allNextStates
       bestGeodeCount = maximum $ map (last . snd) nextStates
-   in trace (show bpId ++ "-" ++ show minute ++ ": " ++ show (length nextStates) ++ " states. Geodes: " ++ show bestGeodeCount) (Set.fromList nextStates)
+   in Set.fromList nextStates
 
 evaluateBlueprint :: Int -> Int -> Blueprint -> Int
 evaluateBlueprint minuteCount pruneFactor (bpId, botCosts) =
