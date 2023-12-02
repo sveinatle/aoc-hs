@@ -9,7 +9,7 @@ import Debug.Trace
 
 log2 v = trace (show v) v
 
-cases = [Case solveA "Test" 8, Problem solveA "Problem", Case solveB "Test" 999, Problem solveB "Problem"]
+cases = [Case solveA "Test" 8, Problem solveA "Problem", Case solveB "Test" 2286, Problem solveB "Problem"]
 
 -- 12 red cubes, 13 green cubes, and 14 blue cubes
 data Game = Game {gameId :: Int, gameDraws :: [Draw]} deriving (Show)
@@ -50,5 +50,10 @@ isPossibleGame (Game id draws) =
   let Draw maxRed maxGreen maxBlue = combineDraws max draws
    in (maxRed <= 12) && (maxGreen <= 13) && (maxBlue <= 14)
 
+getPower :: Game -> Int
+getPower (Game id draws) =
+  let Draw maxRed maxGreen maxBlue = combineDraws max draws
+   in maxRed * maxGreen * maxBlue
+
 solveB :: [String] -> Int
-solveB lines = 1
+solveB = sum . map (getPower . readGame)
