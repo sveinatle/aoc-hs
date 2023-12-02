@@ -6,8 +6,6 @@ import Data.Maybe (isJust)
 import DayProblem
 import Debug.Trace
 
-log v = trace (show v) v
-
 cases = [Case solveA "Test" 142, Problem solveA "Problem", Case solveB "Test2" 281, Problem solveB "Problem"]
 
 solveA :: [String] -> Int
