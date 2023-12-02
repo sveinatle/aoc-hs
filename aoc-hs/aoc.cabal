@@ -53,7 +53,7 @@ executable aoc2021
         monad-loops,
         regex-compat
 
-    hs-source-dirs:   base 2021/src
+    hs-source-dirs:   base 2021
     default-language: Haskell2010
 
 executable aoc2022
@@ -76,7 +76,7 @@ executable aoc2022
         monad-loops,
         regex-compat
 
-    hs-source-dirs:   base 2022/src
+    hs-source-dirs:   base 2022
     default-language: Haskell2010
 
 executable aoc2023
@@ -99,5 +99,5 @@ executable aoc2023
         monad-loops,
         regex-compat
 
-    hs-source-dirs:   base 2023/src
+    hs-source-dirs:   base 2023
     default-language: Haskell2010

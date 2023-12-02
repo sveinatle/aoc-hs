@@ -6,4 +6,4 @@ days =
   [ Day01.cases
   ]
 
-dataPath = "2023/data/"
+dataPath = "../data/2023/"
