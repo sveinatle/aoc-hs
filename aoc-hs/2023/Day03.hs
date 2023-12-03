@@ -4,8 +4,10 @@ module Day03 where
 
 import Data.Char (digitToInt, isDigit, isNumber)
 import Data.List (foldl', groupBy, sort, sortBy)
+import Data.Maybe (mapMaybe)
 import DayProblem
 import Debug.Trace
+import Text.Read (readMaybe)
 
 log2 v = trace (show v) v
 
@@ -44,21 +46,14 @@ findNumbersInSchematic (Schematic w h rows) =
 
 findNumbersInRow :: String -> [(Int, Int, Int)]
 findNumbersInRow row =
-  let xWithCell = zip [0 ..] row
-      isAdjacent (prevX, prevColSpan, prevNumber) nextX = prevX + prevColSpan == nextX
-      addDigit ((prevX, prevColSpan, prevNumber) : numbers) digit = (prevX, prevColSpan + 1, prevNumber * 10 + digit) : numbers
-      addDigit [] _ = error "Should never happen."
-   in foldl'
-        ( \numbers (x, cell) ->
-            if isDigit cell
-              then
-                if not (null numbers) && (isAdjacent . head) numbers x -- If a number has been found already and it is adjacent to this cell.
-                  then addDigit numbers (digitToInt cell) -- Then update the existing number.
-                  else (x, 1, digitToInt cell) : numbers -- Else prepend the digit as a new number.
-              else numbers
+  let groups = groupBy (\a b -> isDigit a == isDigit b) row
+      groupsWithLocation = scanl (\(prevX, prevColSpan, _) group -> (prevX + prevColSpan, length group, readMaybe group :: Maybe Int)) (0, 0, Nothing) groups
+   in mapMaybe
+        ( \(x, colSpan, maybeNumber) -> case maybeNumber of
+            Just number -> Just (x, colSpan, number)
+            _ -> Nothing
         )
-        []
-        xWithCell
+        groupsWithLocation
 
 getNeighbours :: Schematic -> NumberLocation -> [(Int, Int)]
 getNeighbours schematic (NumberLocation x y colSpan number) =
