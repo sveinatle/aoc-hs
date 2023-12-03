@@ -1,7 +1,9 @@
+{-# LANGUAGE TupleSections #-}
+
 module Day03 where
 
 import Data.Char (digitToInt, isDigit, isNumber)
-import Data.List (foldl')
+import Data.List (foldl', groupBy, sort, sortBy)
 import DayProblem
 import Debug.Trace
 
@@ -58,17 +60,37 @@ findNumbersInRow row =
         []
         xWithCell
 
-isPart :: Char -> Bool
-isPart c = not (isDigit c || c == '.')
-
-isPartNumber :: Schematic -> NumberLocation -> Bool
-isPartNumber schematic (NumberLocation x y colSpan number) =
+getNeighbours :: Schematic -> NumberLocation -> [(Int, Int)]
+getNeighbours schematic (NumberLocation x y colSpan number) =
   let xs = [(x - 1) .. (x + colSpan)]
       above = zip xs (repeat (y - 1))
       below = zip xs (repeat (y + 1))
       sides = [(x - 1, y), (x + colSpan, y)]
-      neighbours = sides ++ above ++ below
+   in sides ++ above ++ below
+
+isPart :: Char -> Bool
+isPart c = not (isDigit c || c == '.')
+
+isPartNumber :: Schematic -> NumberLocation -> Bool
+isPartNumber schematic numbers =
+  let neighbours = getNeighbours schematic numbers
    in any (isPart . uncurry (getCell schematic)) neighbours
 
+isGear :: Char -> Bool
+isGear c = c == '*'
+
+getNeighbourGears :: Schematic -> NumberLocation -> [((Int, Int), Int)]
+getNeighbourGears schematic number =
+  let neighbours = getNeighbours schematic number
+      isGear (x, y) = (== '*') $ getCell schematic x y
+   in map (,nlValue number) $ filter isGear neighbours
+
 solveB :: [String] -> Int
-solveB lines = 0
+solveB lines =
+  let schematic = readSchematic lines
+      numbers = findNumbersInSchematic schematic
+      gearsWithNumber = concatMap (getNeighbourGears schematic) numbers
+      groupedGearsWithNumbers = groupBy (\((x1, y1), _) ((x2, y2), _) -> x1 == x2 && y1 == y2) $ sort gearsWithNumber
+      calculateGearPower [(_, num1), (_, num2)] = num1 * num2
+      calculateGearPower _ = error "Unexpected gear numbers length."
+   in (sum . map calculateGearPower . filter ((== 2) . length)) groupedGearsWithNumbers
