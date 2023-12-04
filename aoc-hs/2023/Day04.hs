@@ -61,7 +61,7 @@ solveB = countCards . processWinnings . readCardsMap
           gainedCardIds = [cardId + 1 .. cardId + matchCount card]
 
           updateCard :: Cards -> CardId -> Cards
-          updateCard cards cardId = Map.adjust (\Card {cardCount = oldCount, ..} -> Card {cardCount = oldCount + gainedCount, ..}) cardId cards
+          updateCard cards cardId = Map.adjust (\card -> card {cardCount = cardCount card + gainedCount}) cardId cards
        in foldl updateCard cards gainedCardIds
 
     countCards :: Cards -> Int
