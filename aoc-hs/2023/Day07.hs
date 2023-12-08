@@ -21,7 +21,7 @@ log2 v = trace (show v) v
 
 cases = [Case solveA "Test" 6440, Problem solveA "Problem", Case solveB "Test" 5905, Problem solveB "Problem"]
 
-data Hand = Hand {handValue :: Int, bid :: Int, cards :: [Char]} deriving (Ord, Eq, Show)
+data Hand = Hand {handValues :: [Int], bid :: Int, cards :: [Char]} deriving (Ord, Eq, Show)
 
 data Mode = A | B
 
@@ -36,7 +36,7 @@ readHands mode = map readHand
   where
     readHand line =
       let [cards, bidString] = words line
-          handValue = sum (zipWith (\idx cardValue -> (15 ^ idx) * cardValue) [6, 5 .. 1] (handTypeValue (replaceCards cards) : map cardValue cards))
+          handValues = handTypeValue (replaceCards cards) : map cardValue cards
           bid = read bidString
        in Hand {..}
 
