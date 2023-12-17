@@ -34,16 +34,16 @@ readProblem = map readLine
     readLine :: String -> [Int]
     readLine = map read . words
 
-predict :: [Int] -> Int
+predict :: [Int] -> (Int, Int)
 predict nums
-  | all (== 0) nums = 0
+  | all (== 0) nums = (0, 0)
   | otherwise =
     let diffs = zipWith (\l r -> r - l) nums (drop 1 nums)
-        nextDiff = predict diffs
-     in last nums + nextDiff
+        (nextStartDiff, nextEndDiff) = predict diffs
+     in (head nums - nextStartDiff, last nums + nextEndDiff)
 
 solveA :: [String] -> Int
-solveA = sum . map predict . readProblem
+solveA = sum . map (snd . predict) . readProblem
 
 solveB :: [String] -> Int
-solveB lines = 0
+solveB = sum . map (fst . predict) . readProblem
