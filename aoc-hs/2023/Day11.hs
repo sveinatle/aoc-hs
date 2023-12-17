@@ -26,7 +26,7 @@ import Debug.Trace (trace)
 
 log2 v = trace (show v) v
 
-cases = [Case solveA "Test" 374, Problem solveA "Problem", Case solveB "Test" 999, Problem solveB "Problem"]
+cases = [Case solveA "Test" 374, Problem solveA "Problem", Case solveB10 "Test" 1030, Case solveB100 "Test" 8410, Problem solveB1000000 "Problem"]
 
 type Galaxy = (Int, Int)
 
@@ -39,17 +39,25 @@ readGalaxies = concatMap (\(y, xs) -> map (,y) xs) . zip [0 ..] . map readXs
 findGaps :: [Int] -> [Int]
 findGaps nums = [(minimum nums) .. (maximum nums)] \\ nums
 
-calcDistance :: [Int] -> [Int] -> (Galaxy, Galaxy) -> Int
-calcDistance xGaps yGaps ((ax, ay), (bx, by)) = calcDistance1 xGaps ax bx + calcDistance1 yGaps ay by
+calcDistance :: Int -> [Int] -> [Int] -> (Galaxy, Galaxy) -> Int
+calcDistance spaceSize xGaps yGaps ((ax, ay), (bx, by)) = calcDistance1 xGaps ax bx + calcDistance1 yGaps ay by
   where
-    calcDistance1 gaps a b = abs (a - b) + length (filter (\g -> g > a && g < b || g > b && g < a) gaps)
+    calcDistance1 gaps a b = abs (a - b) + (spaceSize -1) * length (filter (\g -> g > a && g < b || g > b && g < a) gaps)
 
-solveA :: [String] -> Int
-solveA lines =
+solve spaceSize lines =
   let galaxies = readGalaxies lines
       xGaps = findGaps $ map fst galaxies
       yGaps = findGaps $ map snd galaxies
-   in (`div` 2) . sum . map (calcDistance xGaps yGaps) $ [(a, b) | a <- galaxies, b <- galaxies]
+   in (`div` 2) . sum . map (calcDistance spaceSize xGaps yGaps) $ [(a, b) | a <- galaxies, b <- galaxies]
 
-solveB :: [String] -> Int
-solveB lines = 0
+solveA :: [String] -> Int
+solveA = solve 2
+
+solveB10 :: [String] -> Int
+solveB10 = solve 10
+
+solveB100 :: [String] -> Int
+solveB100 = solve 100
+
+solveB1000000 :: [String] -> Int
+solveB1000000 = solve 1000000
