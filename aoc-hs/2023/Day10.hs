@@ -26,7 +26,7 @@ import Debug.Trace (trace)
 
 log2 v = trace (show v) v
 
-cases = [Case solveA "Test" 8, Problem solveA "Problem", Case solveB "Test" 999, Problem solveB "Problem"]
+cases = [Case solveA "Test" 8, Problem solveA "Problem", Case solveB "Test2" 4, Case solveB "Test3" 8, Case solveB "Test4" 10, Problem solveB "Problem"]
 
 type Coord = (Int, Int)
 
