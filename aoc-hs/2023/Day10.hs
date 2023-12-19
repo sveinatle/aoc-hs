@@ -12,7 +12,7 @@ import Control.Monad.State.Strict
 import Data.Char (digitToInt, isAlphaNum, isDigit, isSpace)
 import Data.Function (on)
 import Data.HashMap.Internal.Array (pair)
-import Data.List (dropWhileEnd, find, group, groupBy, intersect, maximumBy, minimumBy, nub, sort, sortBy, transpose)
+import Data.List (dropWhileEnd, find, findIndex, group, groupBy, intercalate, intersect, maximumBy, minimumBy, nub, sort, sortBy, transpose)
 import Data.List.Split (chunksOf, splitEvery, splitOn, splitOneOf)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -31,7 +31,7 @@ cases = [Case solveA "Test" 8, Problem solveA "Problem", Case solveB "Test2" 4, 
 type Coord = (Int, Int)
 
 -- TODO: Reprecent as arrays of possible directions? Might make deduceStartCell simpler.
-data Cell = S | UD | LR | DL | DR | UL | UR | G deriving (Eq, Show)
+data Cell = S | UD | LR | DL | DR | UL | UR | G deriving (Eq, Ord, Show)
 
 type Grid = Vector (Vector Cell)
 
@@ -123,4 +123,36 @@ solveA lines = (`div` 2) . length . navigate grid $ [(startCoord, startCell)]
     startCell = deduceStartCell grid startCoord
 
 solveB :: [String] -> Int
-solveB ls = 0
+solveB lines = length [(x, y) | x <- [0 .. V.length (V.head grid) - 1], y <- [0 .. V.length grid - 1], isInside (x, y)]
+  where
+    grid = readProblem lines
+    startCoord = findStart grid
+    startCell = deduceStartCell grid startCoord
+    path = navigate grid [(startCoord, startCell)]
+    crossingPathCellsByRow =
+      Map.map
+        ( filter ((== UD) . snd)
+            . replaceCrossingPair (UR, DL)
+            . replaceCrossingPair (DR, UL)
+            . filter ((/= LR) . snd) -- Remove parallel path cells. They don't matter, and removing them lets us look for connected turns forming crossing pairs.
+            . sort -- Sort (by x) to get connected cells together.
+        )
+        $ Map.fromListWith (++) [(y, [(x, cell)]) | p@((x, y), cell) <- path]
+
+    -- Replace given pair with UD.
+    replaceCrossingPair :: (Cell, Cell) -> [(Int, Cell)] -> [(Int, Cell)]
+    replaceCrossingPair (p1c, p2c) row =
+      let repla p1 (p2 : cs)
+            | snd p1 == p1c && snd p2 == p2c = (fst p1, UD) : cs
+            | otherwise = p1 : p2 : cs
+          repla c cs = c : cs
+       in foldr repla [] row
+
+    isInside (cx, cy)
+      | isInPath = False -- If coord is in path, then don't count as inside.
+      | otherwise = case pathCellsInRow of
+        Just pathCellsInRow -> odd . length . filter ((< cx) . fst) $ pathCellsInRow
+        Nothing -> False
+      where
+        pathCellsInRow = crossingPathCellsByRow Map.!? cy
+        isInPath = any ((== (cx, cy)) . fst) path -- TODO: Optimize/find alternative. This is probably slow to do for every cell since path covers most of the grid.
